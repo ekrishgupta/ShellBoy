@@ -979,14 +979,82 @@ int CPU::execute(uint8_t opcode) {
     setFlag(FLAG_C, res > 0xFF);
     return 8;
   }
+  case 0xC2: { // JP NZ, nn
+    uint16_t addr = fetch16();
+    if (!getFlag(FLAG_Z)) {
+      PC = addr;
+      return 16;
+    }
+    return 12;
+  }
   case 0xC3: // JP nn
     PC = fetch16();
     return 16;
+  case 0xC4: { // CALL NZ, nn
+    uint16_t addr = fetch16();
+    if (!getFlag(FLAG_Z)) {
+      pushStack(PC);
+      PC = addr;
+      return 24;
+    }
+    return 12;
+  }
+  case 0xCA: { // JP Z, nn
+    uint16_t addr = fetch16();
+    if (getFlag(FLAG_Z)) {
+      PC = addr;
+      return 16;
+    }
+    return 12;
+  }
+  case 0xCC: { // CALL Z, nn
+    uint16_t addr = fetch16();
+    if (getFlag(FLAG_Z)) {
+      pushStack(PC);
+      PC = addr;
+      return 24;
+    }
+    return 12;
+  }
   case 0xCD: { // CALL nn
     uint16_t addr = fetch16();
     pushStack(PC);
     PC = addr;
     return 24;
+  }
+  case 0xD2: { // JP NC, nn
+    uint16_t addr = fetch16();
+    if (!getFlag(FLAG_C)) {
+      PC = addr;
+      return 16;
+    }
+    return 12;
+  }
+  case 0xD4: { // CALL NC, nn
+    uint16_t addr = fetch16();
+    if (!getFlag(FLAG_C)) {
+      pushStack(PC);
+      PC = addr;
+      return 24;
+    }
+    return 12;
+  }
+  case 0xDA: { // JP C, nn
+    uint16_t addr = fetch16();
+    if (getFlag(FLAG_C)) {
+      PC = addr;
+      return 16;
+    }
+    return 12;
+  }
+  case 0xDC: { // CALL C, nn
+    uint16_t addr = fetch16();
+    if (getFlag(FLAG_C)) {
+      pushStack(PC);
+      PC = addr;
+      return 24;
+    }
+    return 12;
   }
   case 0xC9: // RET
     PC = popStack();
