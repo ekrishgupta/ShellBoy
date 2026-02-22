@@ -232,6 +232,28 @@ int CPU::execute(uint8_t opcode) {
     bus.write(HL.reg16, AF.hi);
     HL.reg16--;
     return 8;
+
+  case 0x34: { // INC (HL)
+    uint8_t val = bus.read(HL.reg16);
+    bool h = (val & 0x0F) == 0x0F;
+    val++;
+    bus.write(HL.reg16, val);
+    setFlag(FLAG_Z, val == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, h);
+    return 12;
+  }
+  case 0x35: { // DEC (HL)
+    uint8_t val = bus.read(HL.reg16);
+    bool h = (val & 0x0F) == 0;
+    val--;
+    bus.write(HL.reg16, val);
+    setFlag(FLAG_Z, val == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, h);
+    return 12;
+  }
+
   case 0x3A: // LDD A, (HL-)
     AF.hi = bus.read(HL.reg16);
     HL.reg16--;
