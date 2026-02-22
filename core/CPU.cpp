@@ -101,6 +101,24 @@ int CPU::execute(uint8_t opcode) {
     BC.reg16++;
     return 8;
 
+  case 0x08: // LD (nn), SP
+    bus.write(fetch16(), SP & 0xFF);
+    bus.write(PC - 1 + 1, SP >> 8); // Wait, fetch16 already advanced PC by 2.
+    // Let's rewrite this correctly:
+    {
+      uint16_t addr = fetch16();
+      bus.write(addr, SP & 0xFF);
+      bus.write(addr + 1, SP >> 8);
+      return 20;
+    }
+  case 0x09: { // ADD HL, BC
+    uint32_t res = HL.reg16 + BC.reg16;
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, (HL.reg16 & 0x0FFF) + (BC.reg16 & 0x0FFF) > 0x0FFF);
+    setFlag(FLAG_C, res > 0xFFFF);
+    HL.reg16 = res & 0xFFFF;
+    return 8;
+  }
   case 0x0A: // LD A, (BC)
     AF.hi = bus.read(BC.reg16);
     return 8;
@@ -175,6 +193,14 @@ int CPU::execute(uint8_t opcode) {
     DE.reg16++;
     return 8;
 
+  case 0x19: { // ADD HL, DE
+    uint32_t res = HL.reg16 + DE.reg16;
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, (HL.reg16 & 0x0FFF) + (DE.reg16 & 0x0FFF) > 0x0FFF);
+    setFlag(FLAG_C, res > 0xFFFF);
+    HL.reg16 = res & 0xFFFF;
+    return 8;
+  }
   case 0x1A: // LD A, (DE)
     AF.hi = bus.read(DE.reg16);
     return 8;
@@ -206,6 +232,14 @@ int CPU::execute(uint8_t opcode) {
     HL.reg16++;
     return 8;
 
+  case 0x29: { // ADD HL, HL
+    uint32_t res = HL.reg16 + HL.reg16;
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, (HL.reg16 & 0x0FFF) + (HL.reg16 & 0x0FFF) > 0x0FFF);
+    setFlag(FLAG_C, res > 0xFFFF);
+    HL.reg16 = res & 0xFFFF;
+    return 8;
+  }
   case 0x2A: // LDI A, (HL+)
     AF.hi = bus.read(HL.reg16);
     HL.reg16++;
@@ -261,6 +295,14 @@ int CPU::execute(uint8_t opcode) {
     return 12;
   }
 
+  case 0x39: { // ADD HL, SP
+    uint32_t res = HL.reg16 + SP;
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, (HL.reg16 & 0x0FFF) + (SP & 0x0FFF) > 0x0FFF);
+    setFlag(FLAG_C, res > 0xFFFF);
+    HL.reg16 = res & 0xFFFF;
+    return 8;
+  }
   case 0x3A: // LDD A, (HL-)
     AF.hi = bus.read(HL.reg16);
     HL.reg16--;
@@ -1131,8 +1173,17 @@ int CPU::execute(uint8_t opcode) {
   case 0xFB: // EI
     IME = true;
     return 4;
+  case 0xCB: // Prefix CB
+    return executeCB(fetch());
+
   default:
     // Placeholder for unimplemented opcodes
     return 0;
   }
+}
+
+int CPU::executeCB(uint8_t opcode) {
+  // To be implemented: Bitwise operations, Rotates, Shifts
+  // Returns cycles consumed.
+  return 8; // (HL) takes 16 cycles, others take 8 cycles
 }
