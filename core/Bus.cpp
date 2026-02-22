@@ -31,6 +31,9 @@ uint8_t Bus::read(uint16_t address) const {
   } else if (address >= 0xFF04 && address <= 0xFF07) {
     if (timer)
       return timer->read(address);
+  } else if (address >= 0xFF40 && address <= 0xFF4B) {
+    if (ppu)
+      return ppu->readReg(address);
   }
   return memory[address];
 }
@@ -62,6 +65,10 @@ void Bus::write(uint16_t address, uint8_t value) {
   } else if (address >= 0xFF04 && address <= 0xFF07) {
     if (timer)
       timer->write(address, value);
+    return;
+  } else if (address >= 0xFF40 && address <= 0xFF4B) {
+    if (ppu)
+      ppu->writeReg(address, value);
     return;
   }
   memory[address] = value;
