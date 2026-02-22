@@ -945,6 +945,44 @@ int CPU::execute(uint8_t opcode) {
   case 0xC9: // RET
     PC = popStack();
     return 16;
+  case 0xC1: // POP BC
+    BC.reg16 = popStack();
+    return 12;
+  case 0xC5: // PUSH BC
+    pushStack(BC.reg16);
+    return 16;
+  case 0xD1: // POP DE
+    DE.reg16 = popStack();
+    return 12;
+  case 0xD5: // PUSH DE
+    pushStack(DE.reg16);
+    return 16;
+  case 0xE1: // POP HL
+    HL.reg16 = popStack();
+    return 12;
+  case 0xE5: // PUSH HL
+    pushStack(HL.reg16);
+    return 16;
+  case 0xF1:                        // POP AF
+    AF.reg16 = popStack() & 0xFFF0; // Low 4 bits of F are always 0
+    return 12;
+  case 0xF5: // PUSH AF
+    pushStack(AF.reg16);
+    return 16;
+
+  case 0xE0: // LDH (n8), A
+    bus.write(0xFF00 | fetch(), AF.hi);
+    return 12;
+  case 0xF0: // LDH A, (n8)
+    AF.hi = bus.read(0xFF00 | fetch());
+    return 12;
+  case 0xE2: // LD (C), A
+    bus.write(0xFF00 | BC.lo, AF.hi);
+    return 8;
+  case 0xF2: // LD A, (C)
+    AF.hi = bus.read(0xFF00 | BC.lo);
+    return 8;
+
   case 0xF3: // DI
     IME = false;
     return 4;
