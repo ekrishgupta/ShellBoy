@@ -30,6 +30,8 @@ private:
   int scanlineCounter = 456; // T-cycles per scanline
   uint8_t currentScanline = 0;
 
+  void renderScanline();
+
   std::array<uint8_t, 0x2000> vram{};
   std::array<uint8_t, 0xA0> oam{};
 
