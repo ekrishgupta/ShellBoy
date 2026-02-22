@@ -54,4 +54,5 @@ private:
   uint8_t fetch();
   uint16_t fetch16();
   int execute(uint8_t opcode);
+  int executeCB(uint8_t opcode);
 };
