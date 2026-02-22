@@ -31,6 +31,9 @@ public:
   void setFlag(uint8_t flag, bool value);
   bool getFlag(uint8_t flag) const;
 
+  void pushStack(uint16_t value);
+  uint16_t popStack();
+
   // Registers
   Register AF; // A = hi, F = lo
   Register BC; // B = hi, C = lo
@@ -46,5 +49,6 @@ private:
   Bus &bus;
 
   uint8_t fetch();
+  uint16_t fetch16();
   int execute(uint8_t opcode);
 };

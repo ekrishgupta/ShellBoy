@@ -26,9 +26,26 @@ void CPU::setFlag(uint8_t flag, bool value) {
 
 bool CPU::getFlag(uint8_t flag) const { return (AF.lo & flag) != 0; }
 
+void CPU::pushStack(uint16_t value) {
+  SP -= 2;
+  bus.write16(SP, value);
+}
+
+uint16_t CPU::popStack() {
+  uint16_t value = bus.read16(SP);
+  SP += 2;
+  return value;
+}
+
 uint8_t CPU::fetch() {
   uint8_t val = bus.read(PC);
   PC++;
+  return val;
+}
+
+uint16_t CPU::fetch16() {
+  uint16_t val = bus.read16(PC);
+  PC += 2;
   return val;
 }
 
