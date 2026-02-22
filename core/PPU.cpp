@@ -6,8 +6,6 @@ PPU::~PPU() {}
 
 void PPU::tick() {
   // A scanline takes 456 T-cycles.
-  // In a full implementation, we subtract the amount of T-cycles elapsed in the
-  // CPU. Assuming this tick runs per CPU cycle for now:
   scanlineCounter--;
 
   if (scanlineCounter <= 0) {
@@ -16,15 +14,27 @@ void PPU::tick() {
 
     if (currentScanline == 144) {
       // V-Blank period starts
-      // Frame is perfectly drawn now
+      stat = (stat & 0xFC) | 1; // Mode 1
+      bus.requestInterrupt(Bus::INTERRUPT_VBLANK);
       frameReady = true;
     } else if (currentScanline > 153) {
       // Reset scanline
       currentScanline = 0;
+      stat = (stat & 0xFC) | 2; // Mode 2
+    } else if (currentScanline < 144) {
+      stat = (stat & 0xFC) | 2; // Mode 2 (approximation for now)
     }
 
     // Write current scanline to LY register (0xFF44)
     bus.write(0xFF44, currentScanline);
+
+    // Update LYC=LY Coincidence flag (Bit 2 of STAT)
+    if (currentScanline == lyc) {
+      stat |= 0x04;
+      // Note: LYC interrupt should also be triggered here if enabled in STAT
+    } else {
+      stat &= ~0x04;
+    }
   }
 }
 
