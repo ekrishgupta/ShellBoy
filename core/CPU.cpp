@@ -153,6 +153,43 @@ int CPU::execute(uint8_t opcode) {
   case 0x11: // LD DE, n16
     DE.reg16 = fetch16();
     return 12;
+  case 0x18: { // JR n8
+    int8_t offset = static_cast<int8_t>(fetch());
+    PC += offset;
+    return 12;
+  }
+  case 0x20: { // JR NZ, n8
+    int8_t offset = static_cast<int8_t>(fetch());
+    if (!getFlag(FLAG_Z)) {
+      PC += offset;
+      return 12;
+    }
+    return 8;
+  }
+  case 0x28: { // JR Z, n8
+    int8_t offset = static_cast<int8_t>(fetch());
+    if (getFlag(FLAG_Z)) {
+      PC += offset;
+      return 12;
+    }
+    return 8;
+  }
+  case 0x30: { // JR NC, n8
+    int8_t offset = static_cast<int8_t>(fetch());
+    if (!getFlag(FLAG_C)) {
+      PC += offset;
+      return 12;
+    }
+    return 8;
+  }
+  case 0x38: { // JR C, n8
+    int8_t offset = static_cast<int8_t>(fetch());
+    if (getFlag(FLAG_C)) {
+      PC += offset;
+      return 12;
+    }
+    return 8;
+  }
   case 0x16: // LD D, n8
     DE.hi = fetch();
     return 8;
