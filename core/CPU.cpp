@@ -363,6 +363,94 @@ int CPU::execute(uint8_t opcode) {
     setFlag(FLAG_C, res > 0xFF);
     return 4;
   }
+  case 0x88: { // ADC A, B
+    uint8_t val = BC.hi;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi + val + c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) + c > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x89: { // ADC A, C
+    uint8_t val = BC.lo;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi + val + c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) + c > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x8A: { // ADC A, D
+    uint8_t val = DE.hi;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi + val + c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) + c > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x8B: { // ADC A, E
+    uint8_t val = DE.lo;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi + val + c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) + c > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x8C: { // ADC A, H
+    uint8_t val = HL.hi;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi + val + c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) + c > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x8D: { // ADC A, L
+    uint8_t val = HL.lo;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi + val + c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) + c > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x8E: { // ADC A, (HL)
+    uint8_t val = bus.read(HL.reg16);
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi + val + c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) + c > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 8;
+  }
+  case 0x8F: { // ADC A, A
+    uint8_t val = AF.hi;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi + val + c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) + c > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
 
   case 0x90: { // SUB A, B
     uint8_t val = BC.hi;
@@ -440,6 +528,94 @@ int CPU::execute(uint8_t opcode) {
     setFlag(FLAG_N, true);
     setFlag(FLAG_H, false);
     setFlag(FLAG_C, false);
+    return 4;
+  }
+  case 0x98: { // SBC A, B
+    uint8_t val = BC.hi;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi - val - c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F) + c);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x99: { // SBC A, C
+    uint8_t val = BC.lo;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi - val - c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F) + c);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x9A: { // SBC A, D
+    uint8_t val = DE.hi;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi - val - c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F) + c);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x9B: { // SBC A, E
+    uint8_t val = DE.lo;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi - val - c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F) + c);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x9C: { // SBC A, H
+    uint8_t val = HL.hi;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi - val - c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F) + c);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x9D: { // SBC A, L
+    uint8_t val = HL.lo;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi - val - c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F) + c);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x9E: { // SBC A, (HL)
+    uint8_t val = bus.read(HL.reg16);
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi - val - c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F) + c);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 8;
+  }
+  case 0x9F: { // SBC A, A
+    uint8_t val = AF.hi;
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi - val - c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F) + c);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
     return 4;
   }
 
@@ -692,6 +868,17 @@ int CPU::execute(uint8_t opcode) {
     setFlag(FLAG_C, res > 0xFF);
     return 8;
   }
+  case 0xCE: { // ADC A, n8
+    uint8_t val = fetch();
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi + val + c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) + c > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 8;
+  }
   case 0xD6: { // SUB A, n8
     uint8_t val = fetch();
     uint16_t res = AF.hi - val;
@@ -700,6 +887,17 @@ int CPU::execute(uint8_t opcode) {
     setFlag(FLAG_Z, AF.hi == 0);
     setFlag(FLAG_N, true);
     setFlag(FLAG_C, res > 0xFF); // Borrow occurred
+    return 8;
+  }
+  case 0xDE: { // SBC A, n8
+    uint8_t val = fetch();
+    uint8_t c = getFlag(FLAG_C) ? 1 : 0;
+    uint16_t res = AF.hi - val - c;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F) + c);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
     return 8;
   }
   case 0xE6: { // AND A, n8
