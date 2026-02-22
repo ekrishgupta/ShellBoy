@@ -27,3 +27,15 @@ void PPU::tick() {
     bus.write(0xFF44, currentScanline);
   }
 }
+
+uint8_t PPU::readOAM(uint16_t address) const { return oam[address - 0xFE00]; }
+
+void PPU::writeOAM(uint16_t address, uint8_t value) {
+  oam[address - 0xFE00] = value;
+}
+
+uint8_t PPU::read(uint16_t address) const { return vram[address - 0x8000]; }
+
+void PPU::write(uint16_t address, uint8_t value) {
+  vram[address - 0x8000] = value;
+}
