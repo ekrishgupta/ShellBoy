@@ -5,6 +5,7 @@
 
 class Cartridge;
 class PPU;
+class Timer;
 
 class Bus {
 public:
@@ -19,6 +20,16 @@ public:
 
   void setCartridge(Cartridge *cart);
   void setPPU(PPU *pixel_unit);
+  void setTimer(Timer *t);
+
+  // Interrupt Bit Constants
+  static constexpr uint8_t INTERRUPT_VBLANK = 0x01;
+  static constexpr uint8_t INTERRUPT_STAT = 0x02;
+  static constexpr uint8_t INTERRUPT_TIMER = 0x04;
+  static constexpr uint8_t INTERRUPT_SERIAL = 0x08;
+  static constexpr uint8_t INTERRUPT_JOYPAD = 0x10;
+
+  void requestInterrupt(uint8_t interrupt);
 
 private:
   static constexpr uint16_t ROM0_START = 0x0000;
@@ -47,4 +58,5 @@ private:
 
   Cartridge *cartridge = nullptr;
   PPU *ppu = nullptr;
+  Timer *timer = nullptr;
 };

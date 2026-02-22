@@ -37,6 +37,31 @@ uint16_t CPU::popStack() {
   return value;
 }
 
+void CPU::handleInterrupts() {
+  uint8_t ie = bus.read(0xFFFF);
+  uint8_t if_reg = bus.read(0xFF0F);
+  uint8_t pending = ie & if_reg;
+
+  if (pending == 0)
+    return;
+
+  halted = false;
+
+  if (!IME)
+    return;
+
+  // Interrupts priority: V-Blank > LCD Stat > Timer > Serial > Joypad
+  for (int i = 0; i < 5; ++i) {
+    if ((pending >> i) & 0x01) {
+      IME = false;
+      bus.write(0xFF0F, if_reg & ~(1 << i)); // Clear the specific interrupt bit
+      pushStack(PC);
+      PC = 0x40 + (i * 0x08);
+      break;
+    }
+  }
+}
+
 uint8_t CPU::fetch() {
   uint8_t val = bus.read(PC);
   PC++;
@@ -50,6 +75,12 @@ uint16_t CPU::fetch16() {
 }
 
 int CPU::tick() {
+  handleInterrupts();
+
+  if (halted) {
+    return 4; // CPU in HALT still consumes cycles (mostly)
+  }
+
   uint8_t opcode = fetch();
   return execute(opcode);
 }

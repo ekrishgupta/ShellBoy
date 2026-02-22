@@ -1,5 +1,6 @@
 #include "Bus.h"
 #include "core/PPU.h"
+#include "core/Timer.h"
 #include "mmu/Cartridge.h"
 
 Bus::Bus() {
@@ -27,6 +28,9 @@ uint8_t Bus::read(uint16_t address) const {
   } else if (address >= OAM_START && address <= OAM_END) {
     if (ppu)
       return ppu->readOAM(address);
+  } else if (address >= 0xFF04 && address <= 0xFF07) {
+    if (timer)
+      return timer->read(address);
   }
   return memory[address];
 }
@@ -55,6 +59,10 @@ void Bus::write(uint16_t address, uint8_t value) {
     if (ppu)
       ppu->writeOAM(address, value);
     return;
+  } else if (address >= 0xFF04 && address <= 0xFF07) {
+    if (timer)
+      timer->write(address, value);
+    return;
   }
   memory[address] = value;
 }
@@ -73,3 +81,10 @@ void Bus::write16(uint16_t address, uint16_t value) {
 void Bus::setCartridge(Cartridge *cart) { cartridge = cart; }
 
 void Bus::setPPU(PPU *pixel_unit) { ppu = pixel_unit; }
+
+void Bus::setTimer(Timer *t) { timer = t; }
+
+void Bus::requestInterrupt(uint8_t interrupt) {
+  uint8_t if_reg = read(0xFF0F);
+  write(0xFF0F, if_reg | interrupt);
+}
