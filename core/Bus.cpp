@@ -21,3 +21,7 @@ void Bus::write16(uint16_t address, uint16_t value) {
   write(address, value & 0xFF);
   write(address + 1, value >> 8);
 }
+
+void Bus::setCartridge(Cartridge *cart) { cartridge = cart; }
+
+void Bus::setPPU(PPU *pixel_unit) { ppu = pixel_unit; }

@@ -3,6 +3,9 @@
 #include <array>
 #include <cstdint>
 
+class Cartridge;
+class PPU;
+
 class Bus {
 public:
   Bus();
@@ -13,6 +16,9 @@ public:
 
   uint16_t read16(uint16_t address) const;
   void write16(uint16_t address, uint16_t value);
+
+  void setCartridge(Cartridge *cart);
+  void setPPU(PPU *pixel_unit);
 
 private:
   static constexpr uint16_t ROM0_START = 0x0000;
@@ -38,4 +44,7 @@ private:
   static constexpr uint16_t IE_REG = 0xFFFF;
 
   std::array<uint8_t, 0x10000> memory{}; // Simple 64KB memory map for now
+
+  Cartridge *cartridge = nullptr;
+  PPU *ppu = nullptr;
 };
