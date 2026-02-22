@@ -1183,7 +1183,172 @@ int CPU::execute(uint8_t opcode) {
 }
 
 int CPU::executeCB(uint8_t opcode) {
-  // To be implemented: Bitwise operations, Rotates, Shifts
-  // Returns cycles consumed.
-  return 8; // (HL) takes 16 cycles, others take 8 cycles
+  // Decode CB opcode
+  uint8_t x = opcode >> 6;
+  uint8_t y = (opcode >> 3) & 0x07;
+  uint8_t z = opcode & 0x07;
+
+  // 1. Fetch value
+  uint8_t val = 0;
+  switch (z) {
+  case 0:
+    val = BC.hi;
+    break; // B
+  case 1:
+    val = BC.lo;
+    break; // C
+  case 2:
+    val = DE.hi;
+    break; // D
+  case 3:
+    val = DE.lo;
+    break; // E
+  case 4:
+    val = HL.hi;
+    break; // H
+  case 5:
+    val = HL.lo;
+    break; // L
+  case 6:
+    val = bus.read(HL.reg16);
+    break; // (HL)
+  case 7:
+    val = AF.hi;
+    break; // A
+  }
+
+  // 2. Perform operation
+  if (x == 0) {
+    // Rotates and Shifts
+    switch (y) {
+    case 0: { // RLC
+      bool c = (val & 0x80) != 0;
+      val = (val << 1) | (c ? 1 : 0);
+      setFlag(FLAG_Z, val == 0);
+      setFlag(FLAG_N, false);
+      setFlag(FLAG_H, false);
+      setFlag(FLAG_C, c);
+      break;
+    }
+    case 1: { // RRC
+      bool c = (val & 0x01) != 0;
+      val = (val >> 1) | (c ? 0x80 : 0);
+      setFlag(FLAG_Z, val == 0);
+      setFlag(FLAG_N, false);
+      setFlag(FLAG_H, false);
+      setFlag(FLAG_C, c);
+      break;
+    }
+    case 2: { // RL
+      bool old_c = getFlag(FLAG_C);
+      bool c = (val & 0x80) != 0;
+      val = (val << 1) | (old_c ? 1 : 0);
+      setFlag(FLAG_Z, val == 0);
+      setFlag(FLAG_N, false);
+      setFlag(FLAG_H, false);
+      setFlag(FLAG_C, c);
+      break;
+    }
+    case 3: { // RR
+      bool old_c = getFlag(FLAG_C);
+      bool c = (val & 0x01) != 0;
+      val = (val >> 1) | (old_c ? 0x80 : 0);
+      setFlag(FLAG_Z, val == 0);
+      setFlag(FLAG_N, false);
+      setFlag(FLAG_H, false);
+      setFlag(FLAG_C, c);
+      break;
+    }
+    case 4: { // SLA
+      bool c = (val & 0x80) != 0;
+      val = val << 1;
+      setFlag(FLAG_Z, val == 0);
+      setFlag(FLAG_N, false);
+      setFlag(FLAG_H, false);
+      setFlag(FLAG_C, c);
+      break;
+    }
+    case 5: { // SRA
+      bool c = (val & 0x01) != 0;
+      uint8_t msb = val & 0x80;
+      val = (val >> 1) | msb;
+      setFlag(FLAG_Z, val == 0);
+      setFlag(FLAG_N, false);
+      setFlag(FLAG_H, false);
+      setFlag(FLAG_C, c);
+      break;
+    }
+    case 6: { // SWAP
+      val = (val << 4) | (val >> 4);
+      setFlag(FLAG_Z, val == 0);
+      setFlag(FLAG_N, false);
+      setFlag(FLAG_H, false);
+      setFlag(FLAG_C, false);
+      break;
+    }
+    case 7: { // SRL
+      bool c = (val & 0x01) != 0;
+      val = val >> 1;
+      setFlag(FLAG_Z, val == 0);
+      setFlag(FLAG_N, false);
+      setFlag(FLAG_H, false);
+      setFlag(FLAG_C, c);
+      break;
+    }
+    }
+  } else if (x == 1) {
+    // BIT y, z
+    bool bit = (val & (1 << y)) != 0;
+    setFlag(FLAG_Z, !bit);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    // Carry flag is not affected
+  } else if (x == 2) {
+    // RES y, z
+    val &= ~(1 << y);
+  } else if (x == 3) {
+    // SET y, z
+    val |= (1 << y);
+  }
+
+  // 3. Write value back (if not BIT)
+  if (x != 1) {
+    switch (z) {
+    case 0:
+      BC.hi = val;
+      break;
+    case 1:
+      BC.lo = val;
+      break;
+    case 2:
+      DE.hi = val;
+      break;
+    case 3:
+      DE.lo = val;
+      break;
+    case 4:
+      HL.hi = val;
+      break;
+    case 5:
+      HL.lo = val;
+      break;
+    case 6:
+      bus.write(HL.reg16, val);
+      break;
+    case 7:
+      AF.hi = val;
+      break;
+    }
+  }
+
+  // 4. Return cycles
+  if (z == 6) {
+    if (x == 1) {
+      return 12; // BIT (HL) takes 12 cycles
+    } else {
+      return 16; // RES, SET, Rotates on (HL) take 16 cycles
+    }
+  } else {
+    return 8; // Register operations take 8 cycles
+  }
 }
