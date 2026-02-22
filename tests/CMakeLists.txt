@@ -6,5 +6,7 @@ target_link_libraries(ShellBoyTests
     gtest_main
 )
 
+target_include_directories(ShellBoyTests PRIVATE ${CMAKE_SOURCE_DIR})
+
 include(GoogleTest)
 gtest_discover_tests(ShellBoyTests)

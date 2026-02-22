@@ -8,3 +8,5 @@ target_link_libraries(ShellBoy
     ftxui::dom
     ftxui::component
 )
+
+target_include_directories(ShellBoy PRIVATE ${CMAKE_SOURCE_DIR})
