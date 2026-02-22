@@ -23,7 +23,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 # Add subdirectories (we will create CMakeLists.txt in them later)
-# add_subdirectory(core)
+add_subdirectory(core)
 # add_subdirectory(mmu)
 # add_subdirectory(frontend)
 
