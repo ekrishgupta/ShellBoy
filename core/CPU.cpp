@@ -1056,6 +1056,34 @@ int CPU::execute(uint8_t opcode) {
     }
     return 12;
   }
+  case 0xC0: { // RET NZ
+    if (!getFlag(FLAG_Z)) {
+      PC = popStack();
+      return 20;
+    }
+    return 8;
+  }
+  case 0xC8: { // RET Z
+    if (getFlag(FLAG_Z)) {
+      PC = popStack();
+      return 20;
+    }
+    return 8;
+  }
+  case 0xD0: { // RET NC
+    if (!getFlag(FLAG_C)) {
+      PC = popStack();
+      return 20;
+    }
+    return 8;
+  }
+  case 0xD8: { // RET C
+    if (getFlag(FLAG_C)) {
+      PC = popStack();
+      return 20;
+    }
+    return 8;
+  }
   case 0xC9: // RET
     PC = popStack();
     return 16;
