@@ -94,6 +94,12 @@ int CPU::execute(uint8_t opcode) {
   case 0x01: // LD BC, n16
     BC.reg16 = fetch16();
     return 12;
+  case 0x02: // LD (BC), A
+    bus.write(BC.reg16, AF.hi);
+    return 8;
+  case 0x0A: // LD A, (BC)
+    AF.hi = bus.read(BC.reg16);
+    return 8;
   case 0x04: { // INC B
     bool h = (BC.hi & 0x0F) == 0x0F;
     BC.hi++;
@@ -153,6 +159,12 @@ int CPU::execute(uint8_t opcode) {
   case 0x11: // LD DE, n16
     DE.reg16 = fetch16();
     return 12;
+  case 0x12: // LD (DE), A
+    bus.write(DE.reg16, AF.hi);
+    return 8;
+  case 0x1A: // LD A, (DE)
+    AF.hi = bus.read(DE.reg16);
+    return 8;
   case 0x18: { // JR n8
     int8_t offset = static_cast<int8_t>(fetch());
     PC += offset;
@@ -199,6 +211,14 @@ int CPU::execute(uint8_t opcode) {
   case 0x21: // LD HL, n16
     HL.reg16 = fetch16();
     return 12;
+  case 0x22: // LDI (HL+), A
+    bus.write(HL.reg16, AF.hi);
+    HL.reg16++;
+    return 8;
+  case 0x2A: // LDI A, (HL+)
+    AF.hi = bus.read(HL.reg16);
+    HL.reg16++;
+    return 8;
   case 0x26: // LD H, n8
     HL.hi = fetch();
     return 8;
@@ -208,8 +228,61 @@ int CPU::execute(uint8_t opcode) {
   case 0x31: // LD SP, n16
     SP = fetch16();
     return 12;
+  case 0x32: // LDD (HL-), A
+    bus.write(HL.reg16, AF.hi);
+    HL.reg16--;
+    return 8;
+  case 0x3A: // LDD A, (HL-)
+    AF.hi = bus.read(HL.reg16);
+    HL.reg16--;
+    return 8;
+  case 0x36: // LD (HL), n8
+    bus.write(HL.reg16, fetch());
+    return 12;
   case 0x3E: // LD A, n8
     AF.hi = fetch();
+    return 8;
+  case 0x46: // LD B, (HL)
+    BC.hi = bus.read(HL.reg16);
+    return 8;
+  case 0x4E: // LD C, (HL)
+    BC.lo = bus.read(HL.reg16);
+    return 8;
+  case 0x56: // LD D, (HL)
+    DE.hi = bus.read(HL.reg16);
+    return 8;
+  case 0x5E: // LD E, (HL)
+    DE.lo = bus.read(HL.reg16);
+    return 8;
+  case 0x66: // LD H, (HL)
+    HL.hi = bus.read(HL.reg16);
+    return 8;
+  case 0x6E: // LD L, (HL)
+    HL.lo = bus.read(HL.reg16);
+    return 8;
+  case 0x7E: // LD A, (HL)
+    AF.hi = bus.read(HL.reg16);
+    return 8;
+  case 0x70: // LD (HL), B
+    bus.write(HL.reg16, BC.hi);
+    return 8;
+  case 0x71: // LD (HL), C
+    bus.write(HL.reg16, BC.lo);
+    return 8;
+  case 0x72: // LD (HL), D
+    bus.write(HL.reg16, DE.hi);
+    return 8;
+  case 0x73: // LD (HL), E
+    bus.write(HL.reg16, DE.lo);
+    return 8;
+  case 0x74: // LD (HL), H
+    bus.write(HL.reg16, HL.hi);
+    return 8;
+  case 0x75: // LD (HL), L
+    bus.write(HL.reg16, HL.lo);
+    return 8;
+  case 0x77: // LD (HL), A
+    bus.write(HL.reg16, AF.hi);
     return 8;
   case 0xAF: // XOR A
     AF.hi = 0;
