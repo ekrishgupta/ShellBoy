@@ -60,24 +60,36 @@ int CPU::execute(uint8_t opcode) {
   switch (opcode) {
   case 0x00: // NOP
     return 4;
+  case 0x01: // LD BC, n16
+    BC.reg16 = fetch16();
+    return 12;
   case 0x06: // LD B, n8
     BC.hi = fetch();
     return 8;
   case 0x0E: // LD C, n8
     BC.lo = fetch();
     return 8;
+  case 0x11: // LD DE, n16
+    DE.reg16 = fetch16();
+    return 12;
   case 0x16: // LD D, n8
     DE.hi = fetch();
     return 8;
   case 0x1E: // LD E, n8
     DE.lo = fetch();
     return 8;
+  case 0x21: // LD HL, n16
+    HL.reg16 = fetch16();
+    return 12;
   case 0x26: // LD H, n8
     HL.hi = fetch();
     return 8;
   case 0x2E: // LD L, n8
     HL.lo = fetch();
     return 8;
+  case 0x31: // LD SP, n16
+    SP = fetch16();
+    return 12;
   case 0x3E: // LD A, n8
     AF.hi = fetch();
     return 8;
