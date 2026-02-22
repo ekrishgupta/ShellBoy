@@ -1,6 +1,7 @@
 #include "core/Bus.h"
 #include "core/CPU.h"
 #include "core/PPU.h"
+#include "core/Timer.h"
 #include "frontend/BrailleRenderer.h"
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/screen_interactive.hpp"
@@ -29,7 +30,9 @@ int main(int argc, char **argv) {
 
   CPU cpu(bus);
   PPU ppu(bus);
+  Timer timer(bus);
   bus.setPPU(&ppu);
+  bus.setTimer(&timer);
   BrailleRenderer renderer;
 
   auto screen = ScreenInteractive::TerminalOutput();
@@ -56,6 +59,7 @@ int main(int argc, char **argv) {
       int cyclesThisFrame = 0;
       while (cyclesThisFrame < 70224) {
         int cycles = cpu.tick(); // CPU is currently a stub NOP taking 4 cycles
+        timer.tick(cycles);
         for (int i = 0; i < cycles; ++i) {
           ppu.tick();
         }
