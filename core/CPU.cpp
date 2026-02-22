@@ -97,9 +97,17 @@ int CPU::execute(uint8_t opcode) {
   case 0x02: // LD (BC), A
     bus.write(BC.reg16, AF.hi);
     return 8;
+  case 0x03: // INC BC
+    BC.reg16++;
+    return 8;
+
   case 0x0A: // LD A, (BC)
     AF.hi = bus.read(BC.reg16);
     return 8;
+  case 0x0B: // DEC BC
+    BC.reg16--;
+    return 8;
+
   case 0x04: { // INC B
     bool h = (BC.hi & 0x0F) == 0x0F;
     BC.hi++;
@@ -156,15 +164,24 @@ int CPU::execute(uint8_t opcode) {
     setFlag(FLAG_C, c);
     return 4;
   }
+
   case 0x11: // LD DE, n16
     DE.reg16 = fetch16();
     return 12;
   case 0x12: // LD (DE), A
     bus.write(DE.reg16, AF.hi);
     return 8;
+  case 0x13: // INC DE
+    DE.reg16++;
+    return 8;
+
   case 0x1A: // LD A, (DE)
     AF.hi = bus.read(DE.reg16);
     return 8;
+  case 0x1B: // DEC DE
+    DE.reg16--;
+    return 8;
+
   case 0x18: { // JR n8
     int8_t offset = static_cast<int8_t>(fetch());
     PC += offset;
@@ -178,6 +195,25 @@ int CPU::execute(uint8_t opcode) {
     }
     return 8;
   }
+  case 0x21: // LD HL, n16
+    HL.reg16 = fetch16();
+    return 12;
+  case 0x22: // LDI (HL+), A
+    bus.write(HL.reg16, AF.hi);
+    HL.reg16++;
+    return 8;
+  case 0x23: // INC HL
+    HL.reg16++;
+    return 8;
+
+  case 0x2A: // LDI A, (HL+)
+    AF.hi = bus.read(HL.reg16);
+    HL.reg16++;
+    return 8;
+  case 0x2B: // DEC HL
+    HL.reg16--;
+    return 8;
+
   case 0x28: { // JR Z, n8
     int8_t offset = static_cast<int8_t>(fetch());
     if (getFlag(FLAG_Z)) {
@@ -194,37 +230,6 @@ int CPU::execute(uint8_t opcode) {
     }
     return 8;
   }
-  case 0x38: { // JR C, n8
-    int8_t offset = static_cast<int8_t>(fetch());
-    if (getFlag(FLAG_C)) {
-      PC += offset;
-      return 12;
-    }
-    return 8;
-  }
-  case 0x16: // LD D, n8
-    DE.hi = fetch();
-    return 8;
-  case 0x1E: // LD E, n8
-    DE.lo = fetch();
-    return 8;
-  case 0x21: // LD HL, n16
-    HL.reg16 = fetch16();
-    return 12;
-  case 0x22: // LDI (HL+), A
-    bus.write(HL.reg16, AF.hi);
-    HL.reg16++;
-    return 8;
-  case 0x2A: // LDI A, (HL+)
-    AF.hi = bus.read(HL.reg16);
-    HL.reg16++;
-    return 8;
-  case 0x26: // LD H, n8
-    HL.hi = fetch();
-    return 8;
-  case 0x2E: // LD L, n8
-    HL.lo = fetch();
-    return 8;
   case 0x31: // LD SP, n16
     SP = fetch16();
     return 12;
@@ -232,7 +237,9 @@ int CPU::execute(uint8_t opcode) {
     bus.write(HL.reg16, AF.hi);
     HL.reg16--;
     return 8;
-
+  case 0x33: // INC SP
+    SP++;
+    return 8;
   case 0x34: { // INC (HL)
     uint8_t val = bus.read(HL.reg16);
     bool h = (val & 0x0F) == 0x0F;
@@ -257,6 +264,9 @@ int CPU::execute(uint8_t opcode) {
   case 0x3A: // LDD A, (HL-)
     AF.hi = bus.read(HL.reg16);
     HL.reg16--;
+    return 8;
+  case 0x3B: // DEC SP
+    SP--;
     return 8;
   case 0x36: // LD (HL), n8
     bus.write(HL.reg16, fetch());
