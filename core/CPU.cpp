@@ -281,9 +281,23 @@ int CPU::execute(uint8_t opcode) {
   case 0x75: // LD (HL), L
     bus.write(HL.reg16, HL.lo);
     return 8;
+  case 0x76: // HALT
+    halted = true;
+    return 4;
   case 0x77: // LD (HL), A
     bus.write(HL.reg16, AF.hi);
     return 8;
+  case 0x2F: // CPL
+    AF.hi = ~AF.hi;
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, true);
+    return 4;
+  case 0xEA: // LD (nn), A
+    bus.write(fetch16(), AF.hi);
+    return 16;
+  case 0xFA: // LD A, (nn)
+    AF.hi = bus.read(fetch16());
+    return 16;
   case 0x80: { // ADD A, B
     uint8_t val = BC.hi;
     uint16_t res = AF.hi + val;
