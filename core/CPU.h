@@ -22,6 +22,15 @@ public:
   void reset();
   int tick(); // Execute one instruction, return T-cycles elapsed
 
+  // CPU Flags (stored in register F)
+  static constexpr uint8_t FLAG_Z = 0x80; // Zero
+  static constexpr uint8_t FLAG_N = 0x40; // Subtraction
+  static constexpr uint8_t FLAG_H = 0x20; // Half Carry
+  static constexpr uint8_t FLAG_C = 0x10; // Carry
+
+  void setFlag(uint8_t flag, bool value);
+  bool getFlag(uint8_t flag) const;
+
   // Registers
   Register AF; // A = hi, F = lo
   Register BC; // B = hi, C = lo

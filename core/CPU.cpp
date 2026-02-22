@@ -16,6 +16,16 @@ void CPU::reset() {
   IME = false;
 }
 
+void CPU::setFlag(uint8_t flag, bool value) {
+  if (value) {
+    AF.lo |= flag;
+  } else {
+    AF.lo &= ~flag;
+  }
+}
+
+bool CPU::getFlag(uint8_t flag) const { return (AF.lo & flag) != 0; }
+
 uint8_t CPU::fetch() {
   uint8_t val = bus.read(PC);
   PC++;
