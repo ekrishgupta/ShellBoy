@@ -63,9 +63,41 @@ int CPU::execute(uint8_t opcode) {
   case 0x01: // LD BC, n16
     BC.reg16 = fetch16();
     return 12;
+  case 0x04: { // INC B
+    bool h = (BC.hi & 0x0F) == 0x0F;
+    BC.hi++;
+    setFlag(FLAG_Z, BC.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, h);
+    return 4;
+  }
+  case 0x05: { // DEC B
+    bool h = (BC.hi & 0x0F) == 0;
+    BC.hi--;
+    setFlag(FLAG_Z, BC.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, h);
+    return 4;
+  }
   case 0x06: // LD B, n8
     BC.hi = fetch();
     return 8;
+  case 0x0C: { // INC C
+    bool h = (BC.lo & 0x0F) == 0x0F;
+    BC.lo++;
+    setFlag(FLAG_Z, BC.lo == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, h);
+    return 4;
+  }
+  case 0x0D: { // DEC C
+    bool h = (BC.lo & 0x0F) == 0;
+    BC.lo--;
+    setFlag(FLAG_Z, BC.lo == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, h);
+    return 4;
+  }
   case 0x0E: // LD C, n8
     BC.lo = fetch();
     return 8;
