@@ -284,6 +284,270 @@ int CPU::execute(uint8_t opcode) {
   case 0x77: // LD (HL), A
     bus.write(HL.reg16, AF.hi);
     return 8;
+  case 0x80: { // ADD A, B
+    uint8_t val = BC.hi;
+    uint16_t res = AF.hi + val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x81: { // ADD A, C
+    uint8_t val = BC.lo;
+    uint16_t res = AF.hi + val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x82: { // ADD A, D
+    uint8_t val = DE.hi;
+    uint16_t res = AF.hi + val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x83: { // ADD A, E
+    uint8_t val = DE.lo;
+    uint16_t res = AF.hi + val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x84: { // ADD A, H
+    uint8_t val = HL.hi;
+    uint16_t res = AF.hi + val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x85: { // ADD A, L
+    uint8_t val = HL.lo;
+    uint16_t res = AF.hi + val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x86: { // ADD A, (HL)
+    uint8_t val = bus.read(HL.reg16);
+    uint16_t res = AF.hi + val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 8;
+  }
+  case 0x87: { // ADD A, A
+    uint16_t res = AF.hi + AF.hi;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (AF.hi & 0x0F) > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+
+  case 0x90: { // SUB A, B
+    uint8_t val = BC.hi;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x91: { // SUB A, C
+    uint8_t val = BC.lo;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x92: { // SUB A, D
+    uint8_t val = DE.hi;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x93: { // SUB A, E
+    uint8_t val = DE.lo;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x94: { // SUB A, H
+    uint8_t val = HL.hi;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x95: { // SUB A, L
+    uint8_t val = HL.lo;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0x96: { // SUB A, (HL)
+    uint8_t val = bus.read(HL.reg16);
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF);
+    return 8;
+  }
+  case 0x97: { // SUB A, A
+    AF.hi = 0;
+    setFlag(FLAG_Z, true);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  }
+
+  case 0xA0: // AND A, B
+    AF.hi &= BC.hi;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xA1: // AND A, C
+    AF.hi &= BC.lo;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xA2: // AND A, D
+    AF.hi &= DE.hi;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xA3: // AND A, E
+    AF.hi &= DE.lo;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xA4: // AND A, H
+    AF.hi &= HL.hi;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xA5: // AND A, L
+    AF.hi &= HL.lo;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xA6: // AND A, (HL)
+    AF.hi &= bus.read(HL.reg16);
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    setFlag(FLAG_C, false);
+    return 8;
+  case 0xA7: // AND A, A
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    setFlag(FLAG_C, false);
+    return 4;
+
+  case 0xA8: // XOR A, B
+    AF.hi ^= BC.hi;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xA9: // XOR A, C
+    AF.hi ^= BC.lo;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xAA: // XOR A, D
+    AF.hi ^= DE.hi;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xAB: // XOR A, E
+    AF.hi ^= DE.lo;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xAC: // XOR A, H
+    AF.hi ^= HL.hi;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xAD: // XOR A, L
+    AF.hi ^= HL.lo;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xAE: // XOR A, (HL)
+    AF.hi ^= bus.read(HL.reg16);
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 8;
   case 0xAF: // XOR A
     AF.hi = 0;
     setFlag(FLAG_Z, true);
@@ -291,6 +555,133 @@ int CPU::execute(uint8_t opcode) {
     setFlag(FLAG_H, false);
     setFlag(FLAG_C, false);
     return 4;
+
+  case 0xB0: // OR A, B
+    AF.hi |= BC.hi;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xB1: // OR A, C
+    AF.hi |= BC.lo;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xB2: // OR A, D
+    AF.hi |= DE.hi;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xB3: // OR A, E
+    AF.hi |= DE.lo;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xB4: // OR A, H
+    AF.hi |= HL.hi;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xB5: // OR A, L
+    AF.hi |= HL.lo;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xB6: // OR A, (HL)
+    AF.hi |= bus.read(HL.reg16);
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 8;
+  case 0xB7: // OR A, A
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+
+  case 0xB8: { // CP A, B
+    uint8_t val = BC.hi;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_Z, (res & 0xFF) == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0xB9: { // CP A, C
+    uint8_t val = BC.lo;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_Z, (res & 0xFF) == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0xBA: { // CP A, D
+    uint8_t val = DE.hi;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_Z, (res & 0xFF) == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0xBB: { // CP A, E
+    uint8_t val = DE.lo;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_Z, (res & 0xFF) == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0xBC: { // CP A, H
+    uint8_t val = HL.hi;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_Z, (res & 0xFF) == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0xBD: { // CP A, L
+    uint8_t val = HL.lo;
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_Z, (res & 0xFF) == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    setFlag(FLAG_C, res > 0xFF);
+    return 4;
+  }
+  case 0xBE: { // CP A, (HL)
+    uint8_t val = bus.read(HL.reg16);
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_Z, (res & 0xFF) == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    setFlag(FLAG_C, res > 0xFF);
+    return 8;
+  }
+  case 0xBF: { // CP A, A
+    setFlag(FLAG_Z, true);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  }
   case 0xC6: { // ADD A, n8
     uint8_t val = fetch();
     uint16_t res = AF.hi + val;
