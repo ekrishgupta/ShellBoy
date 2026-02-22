@@ -24,11 +24,40 @@ uint8_t Bus::read(uint16_t address) const {
       return cartridge->read(address);
   } else if (address >= ECHO_START && address <= ECHO_END) {
     return memory[address - 0x2000];
+  } else if (address >= OAM_START && address <= OAM_END) {
+    if (ppu)
+      return ppu->readOAM(address);
   }
   return memory[address];
 }
 
-void Bus::write(uint16_t address, uint8_t value) { memory[address] = value; }
+void Bus::write(uint16_t address, uint8_t value) {
+  if (address >= ROM0_START && address <= ROM0_END) {
+    if (cartridge)
+      cartridge->write(address, value);
+    return;
+  } else if (address >= ROMX_START && address <= ROMX_END) {
+    if (cartridge)
+      cartridge->write(address, value);
+    return;
+  } else if (address >= VRAM_START && address <= VRAM_END) {
+    if (ppu)
+      ppu->write(address, value);
+    return;
+  } else if (address >= SRAM_START && address <= SRAM_END) {
+    if (cartridge)
+      cartridge->write(address, value);
+    return;
+  } else if (address >= ECHO_START && address <= ECHO_END) {
+    memory[address - 0x2000] = value;
+    return;
+  } else if (address >= OAM_START && address <= OAM_END) {
+    if (ppu)
+      ppu->writeOAM(address, value);
+    return;
+  }
+  memory[address] = value;
+}
 
 uint16_t Bus::read16(uint16_t address) const {
   uint8_t lo = read(address);
