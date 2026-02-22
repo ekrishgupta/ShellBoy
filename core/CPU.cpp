@@ -174,6 +174,31 @@ int CPU::execute(uint8_t opcode) {
   case 0x3E: // LD A, n8
     AF.hi = fetch();
     return 8;
+  case 0xAF: // XOR A
+    AF.hi = 0;
+    setFlag(FLAG_Z, true);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 4;
+  case 0xC3: // JP nn
+    PC = fetch16();
+    return 16;
+  case 0xCD: { // CALL nn
+    uint16_t addr = fetch16();
+    pushStack(PC);
+    PC = addr;
+    return 24;
+  }
+  case 0xC9: // RET
+    PC = popStack();
+    return 16;
+  case 0xF3: // DI
+    IME = false;
+    return 4;
+  case 0xFB: // EI
+    IME = true;
+    return 4;
   default:
     // Placeholder for unimplemented opcodes
     return 0;
