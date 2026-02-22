@@ -218,6 +218,59 @@ int CPU::execute(uint8_t opcode) {
     setFlag(FLAG_H, false);
     setFlag(FLAG_C, false);
     return 4;
+  case 0xC6: { // ADD A, n8
+    uint8_t val = fetch();
+    uint16_t res = AF.hi + val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) + (val & 0x0F) > 0x0F);
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_C, res > 0xFF);
+    return 8;
+  }
+  case 0xD6: { // SUB A, n8
+    uint8_t val = fetch();
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    AF.hi = res & 0xFF;
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_C, res > 0xFF); // Borrow occurred
+    return 8;
+  }
+  case 0xE6: { // AND A, n8
+    AF.hi &= fetch();
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, true);
+    setFlag(FLAG_C, false);
+    return 8;
+  }
+  case 0xEE: { // XOR A, n8
+    AF.hi ^= fetch();
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 8;
+  }
+  case 0xF6: { // OR A, n8
+    AF.hi |= fetch();
+    setFlag(FLAG_Z, AF.hi == 0);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, false);
+    return 8;
+  }
+  case 0xFE: { // CP A, n8
+    uint8_t val = fetch();
+    uint16_t res = AF.hi - val;
+    setFlag(FLAG_Z, (res & 0xFF) == 0);
+    setFlag(FLAG_N, true);
+    setFlag(FLAG_H, (AF.hi & 0x0F) < (val & 0x0F));
+    setFlag(FLAG_C, res > 0xFF);
+    return 8;
+  }
   case 0xC3: // JP nn
     PC = fetch16();
     return 16;
