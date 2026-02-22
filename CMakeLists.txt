@@ -29,4 +29,4 @@ add_subdirectory(frontend)
 
 # Enable testing
 enable_testing()
-# add_subdirectory(tests)
+add_subdirectory(tests)
