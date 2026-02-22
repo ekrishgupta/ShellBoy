@@ -1126,6 +1126,10 @@ int CPU::execute(uint8_t opcode) {
     }
     return 8;
   }
+  case 0xD9: // RETI
+    PC = popStack();
+    IME = true;
+    return 16;
   case 0xC9: // RET
     PC = popStack();
     return 16;
