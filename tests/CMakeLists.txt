@@ -3,6 +3,9 @@ add_executable(ShellBoyTests test_cpu.cpp)
 target_link_libraries(ShellBoyTests
     PRIVATE
     core
+    mmu
+    gtest
+    gmock
     gtest_main
 )
 

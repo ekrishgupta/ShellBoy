@@ -4,6 +4,7 @@ add_executable(ShellBoy BrailleRenderer.cpp main.cpp)
 target_link_libraries(ShellBoy
     PRIVATE 
     core
+    mmu
     ftxui::screen
     ftxui::dom
     ftxui::component
