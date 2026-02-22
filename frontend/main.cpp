@@ -5,27 +5,32 @@
 #include "ftxui/component/component.hpp"
 #include "ftxui/component/screen_interactive.hpp"
 #include "ftxui/dom/elements.hpp"
+#include "mmu/Cartridge.h"
+#include <atomic>
 #include <chrono>
 #include <iostream>
 #include <thread>
-#include <atomic>
 
 using namespace ftxui;
 
-int main() {
+int main(int argc, char **argv) {
+  if (argc < 2) {
+    std::cerr << "Usage: ShellBoy <rom_path>" << std::endl;
+    return 1;
+  }
   Bus bus;
+  Cartridge cart;
+  if (!cart.loadRom(argv[1])) {
+    std::cerr << "Failed to load ROM: " << argv[1] << std::endl;
+    return 1;
+  }
+
+  bus.setCartridge(&cart);
+
   CPU cpu(bus);
   PPU ppu(bus);
+  bus.setPPU(&ppu);
   BrailleRenderer renderer;
-
-  // Simulate some visual data for testing the renderer without a ROM
-  for (int y = 0; y < 144; ++y) {
-    for (int x = 0; x < 160; ++x) {
-      if ((x + y) % 5 == 0 || (x - y) % 7 == 0) {
-        ppu.frameBuffer[y * 160 + x] = 1;
-      }
-    }
-  }
 
   auto screen = ScreenInteractive::TerminalOutput();
 
