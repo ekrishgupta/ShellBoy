@@ -94,6 +94,100 @@ void PPU::renderScanline() {
     int bufferOffset = (currentScanline * 160) + pixel;
     frameBuffer[bufferOffset] = color;
   }
+
+  renderSprites();
+}
+
+void PPU::renderSprites() {
+  if ((lcdc & 0x02) == 0)
+    return; // Sprites disabled
+
+  bool use8x16 = (lcdc & 0x04) != 0;
+
+  // Game Boy can render up to 40 sprites, but only 10 per scanline.
+  // On DMG, priority is determined by X-coordinate (lower X = higher priority)
+  // then OAM index. For simplicity, we loop through all and enforce the
+  // 10-limit. To handle overlapping sprites correctly (earlier OAM index =
+  // higher priority), we loop backwards so earlier ones overwrite.
+
+  int spritesOnLine = 0;
+  // First pass: find sprites on this line (up to 10)
+  struct Sprite {
+    uint8_t y, x, tile, attr;
+  };
+  std::vector<Sprite> spritesToRender;
+
+  for (int i = 0; i < 40; i++) {
+    uint8_t y = oam[i * 4] - 16;
+    uint8_t x = oam[i * 4 + 1] - 8;
+    uint8_t height = use8x16 ? 16 : 8;
+
+    if (currentScanline >= y && currentScanline < (y + height)) {
+      if (spritesToRender.size() < 10) {
+        spritesToRender.push_back(
+            {oam[i * 4], oam[i * 4 + 1], oam[i * 4 + 2], oam[i * 4 + 3]});
+      }
+    }
+  }
+
+  // Render the sprites we found in reverse order of OAM index
+  for (int i = (int)spritesToRender.size() - 1; i >= 0; i--) {
+    const auto &s = spritesToRender[i];
+    int yPos = s.y - 16;
+    int xPos = s.x - 8;
+    uint8_t tileIndex = s.tile;
+    uint8_t attr = s.attr;
+
+    bool yFlip = (attr & 0x40) != 0;
+    bool xFlip = (attr & 0x20) != 0;
+    bool priority = (attr & 0x80) != 0; // 1: Behind BG color 1-3, 0: Above BG
+    uint8_t paletteReg = (attr & 0x10) ? obp1 : obp0;
+
+    int line = currentScanline - yPos;
+    int height = use8x16 ? 16 : 8;
+
+    if (yFlip) {
+      line = height - 1 - line;
+    }
+
+    // In 8x16 mode, bit 0 of tile index is ignored.
+    // The top tile is tileIndex & 0xFE, bottom is tileIndex | 0x01.
+    uint16_t tileAddr;
+    if (use8x16) {
+      tileAddr = 0x8000 + ((tileIndex & 0xFE) * 16) + (line * 2);
+    } else {
+      tileAddr = 0x8000 + (tileIndex * 16) + (line * 2);
+    }
+
+    uint8_t data1 = read(tileAddr);
+    uint8_t data2 = read(tileAddr + 1);
+
+    for (int tilePixel = 0; tilePixel < 8; tilePixel++) {
+      int colorBit = 7 - tilePixel;
+      if (xFlip) {
+        colorBit = tilePixel;
+      }
+
+      uint8_t colorNum = ((data2 >> colorBit) & 1) << 1;
+      colorNum |= ((data1 >> colorBit) & 1);
+
+      if (colorNum == 0)
+        continue; // Color 0 is transparent
+
+      int canvasX = xPos + tilePixel;
+      if (canvasX < 0 || canvasX >= 160)
+        continue;
+
+      // Priority check: BGP color 0 is always behind sprites.
+      // If priority bit is set, sprite is behind BG color 1-3.
+      if (priority && frameBuffer[currentScanline * 160 + canvasX] != 0) {
+        continue;
+      }
+
+      uint8_t color = (paletteReg >> (colorNum * 2)) & 3;
+      frameBuffer[currentScanline * 160 + canvasX] = color;
+    }
+  }
 }
 
 uint8_t PPU::readOAM(uint16_t address) const { return oam[address - 0xFE00]; }

@@ -3,6 +3,7 @@
 #include "Bus.h"
 #include <array>
 #include <cstdint>
+#include <vector>
 
 class PPU {
 public:
@@ -31,6 +32,7 @@ private:
   uint8_t currentScanline = 0;
 
   void renderScanline();
+  void renderSprites();
 
   std::array<uint8_t, 0x2000> vram{};
   std::array<uint8_t, 0xA0> oam{};
