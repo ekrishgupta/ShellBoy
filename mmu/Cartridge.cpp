@@ -14,38 +14,41 @@ bool Cartridge::loadRom(const std::string &filepath) {
 
   rom.resize(size);
   if (file.read(reinterpret_cast<char *>(rom.data()), size)) {
-    if (rom.size() > 0x147) {
-      uint8_t type = rom[0x147];
-      if (type >= 1 && type <= 3)
-        mbcType = 1; // MBC1
-      else
-        mbcType = 0; // ROM ONLY or unimplemented
+    uint8_t type = rom[0x147];
+    if (type >= 0x01 && type <= 0x03)
+      mbcType = 1; // MBC1
+    else if (type >= 0x0F && type <= 0x13)
+      mbcType = 3; // MBC3
+    else if (type >= 0x19 && type <= 0x1E)
+      mbcType = 5; // MBC5
+    else
+      mbcType = 0; // ROM ONLY or unimplemented
 
-      switch (rom[0x149]) {
-      case 1:
-        ram.resize(2048);
-        break;
-      case 2:
-        ram.resize(8192);
-        break;
-      case 3:
-        ram.resize(32768);
-        break;
-      case 4:
-        ram.resize(131072);
-        break;
-      case 5:
-        ram.resize(65536);
-        break;
-      default:
-        ram.resize(0);
-        break;
-      }
+    switch (rom[0x149]) {
+    case 1:
+      ram.resize(2048);
+      break;
+    case 2:
+      ram.resize(8192);
+      break;
+    case 3:
+      ram.resize(32768);
+      break;
+    case 4:
+      ram.resize(131072);
+      break;
+    case 5:
+      ram.resize(65536);
+      break;
+    default:
+      ram.resize(0);
+      break;
     }
-    return true;
   }
+  return true;
+}
 
-  return false;
+return false;
 }
 
 uint8_t Cartridge::read(uint16_t address) const {

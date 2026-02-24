@@ -23,5 +23,13 @@ private:
   int romBank = 1;
   int ramBank = 0;
   bool ramEnabled = false;
-  int bankingMode = 0; // 0: ROM mode, 1: RAM mode
+  int bankingMode = 0; // 0: ROM mode, 1: RAM mode (MBC1)
+
+  // MBC3 RTC
+  uint8_t rtcRegisters[5] = {0}; // S, M, H, DL, DH
+  int rtcMappedBank = 0;
+  bool rtcLatch = false;
+
+  // MBC5
+  int romBankHigh = 0;
 };
