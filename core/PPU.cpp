@@ -5,40 +5,84 @@ PPU::PPU(Bus &b) : bus(b) { frameBuffer.fill(0); }
 PPU::~PPU() {}
 
 void PPU::tick() {
-  // A scanline takes 456 T-cycles.
+  if (!(lcdc & 0x80)) {
+    // LCD disabled: reset variables and stay in Mode 0 (or 2?)
+    scanlineCounter = 456;
+    currentScanline = 0;
+    stat &= ~0x03; // Clear mode
+    return;
+  }
+
   scanlineCounter--;
 
   if (scanlineCounter <= 0) {
     scanlineCounter = 456;
     currentScanline++;
+    updateStatus();
 
-    if (currentScanline < 144) {
-      renderScanline();
-    }
-
-    if (currentScanline == 144) {
-      // V-Blank period starts
-      stat = (stat & 0xFC) | 1; // Mode 1
-      bus.requestInterrupt(Bus::INTERRUPT_VBLANK);
-      frameReady = true;
-    } else if (currentScanline > 153) {
-      // Reset scanline
+    if (currentScanline > 153) {
       currentScanline = 0;
-      stat = (stat & 0xFC) | 2; // Mode 2
-    } else if (currentScanline < 144) {
-      stat = (stat & 0xFC) | 2; // Mode 2 (approximation for now)
+      updateStatus();
     }
+  }
 
-    // Write current scanline to LY register (0xFF44)
-    bus.write(0xFF44, currentScanline);
-
-    // Update LYC=LY Coincidence flag (Bit 2 of STAT)
-    if (currentScanline == lyc) {
-      stat |= 0x04;
-      // Note: LYC interrupt should also be triggered here if enabled in STAT
-    } else {
-      stat &= ~0x04;
+  // Mode transitions
+  if (currentScanline >= 144) {
+    if (getMode() != Mode::VBlank) {
+      setMode(Mode::VBlank);
     }
+  } else {
+    if (scanlineCounter > 456 - 80) { // Mode 2: OAM Search (80 dots)
+      if (getMode() != Mode::OAMSearch) {
+        setMode(Mode::OAMSearch);
+      }
+    } else if (scanlineCounter >
+               456 - 80 - 172) { // Mode 3: Pixel Transfer (172+ dots)
+      if (getMode() != Mode::PixelTransfer) {
+        setMode(Mode::PixelTransfer);
+      }
+    } else { // Mode 0: H-Blank
+      if (getMode() != Mode::HBlank) {
+        setMode(Mode::HBlank);
+        renderScanline(); // Render when H-Blank starts
+      }
+    }
+  }
+}
+
+void PPU::setMode(Mode mode) {
+  stat = (stat & 0xFC) | static_cast<uint8_t>(mode);
+
+  bool interrupt = false;
+  switch (mode) {
+  case Mode::HBlank:
+    interrupt = (stat & 0x08);
+    break;
+  case Mode::VBlank:
+    interrupt = (stat & 0x10);
+    bus.requestInterrupt(Bus::INTERRUPT_VBLANK);
+    frameReady = true;
+    break;
+  case Mode::OAMSearch:
+    interrupt = (stat & 0x20);
+    break;
+  default:
+    break;
+  }
+
+  if (interrupt) {
+    bus.requestInterrupt(Bus::INTERRUPT_STAT);
+  }
+}
+
+void PPU::updateStatus() {
+  if (currentScanline == lyc) {
+    stat |= 0x04;
+    if (stat & 0x40) {
+      bus.requestInterrupt(Bus::INTERRUPT_STAT);
+    }
+  } else {
+    stat &= ~0x04;
   }
 }
 
@@ -194,15 +238,33 @@ void PPU::renderSprites() {
   }
 }
 
-uint8_t PPU::readOAM(uint16_t address) const { return oam[address - 0xFE00]; }
+uint8_t PPU::readOAM(uint16_t address) const {
+  Mode mode = getMode();
+  if (mode == Mode::OAMSearch || mode == Mode::PixelTransfer) {
+    return 0xFF;
+  }
+  return oam[address - 0xFE00];
+}
 
 void PPU::writeOAM(uint16_t address, uint8_t value) {
+  Mode mode = getMode();
+  if (mode == Mode::OAMSearch || mode == Mode::PixelTransfer) {
+    return;
+  }
   oam[address - 0xFE00] = value;
 }
 
-uint8_t PPU::read(uint16_t address) const { return vram[address - 0x8000]; }
+uint8_t PPU::read(uint16_t address) const {
+  if (getMode() == Mode::PixelTransfer) {
+    return 0xFF;
+  }
+  return vram[address - 0x8000];
+}
 
 void PPU::write(uint16_t address, uint8_t value) {
+  if (getMode() == Mode::PixelTransfer) {
+    return;
+  }
   vram[address - 0x8000] = value;
 }
 
