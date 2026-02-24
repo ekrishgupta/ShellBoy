@@ -1,4 +1,6 @@
 #include "CPU.h"
+#include <cstdio>
+#include <cstdlib>
 
 CPU::CPU(Bus &b) : bus(b) { reset(); }
 
@@ -86,10 +88,217 @@ int CPU::tick() {
 }
 
 int CPU::execute(uint8_t opcode) {
+  // Handle 8-bit INC, DEC, and LD r, n8 generically if they are non-(HL)
+  if (opcode <= 0x3F) {
+    uint8_t op_type = opcode & 0x07;
+    uint8_t r = (opcode >> 3) & 0x07;
+    if (r != 6) {
+      if (op_type == 0x04) { // INC r
+        uint8_t val = 0;
+        switch (r) {
+        case 0:
+          val = ++BC.hi;
+          break;
+        case 1:
+          val = ++BC.lo;
+          break;
+        case 2:
+          val = ++DE.hi;
+          break;
+        case 3:
+          val = ++DE.lo;
+          break;
+        case 4:
+          val = ++HL.hi;
+          break;
+        case 5:
+          val = ++HL.lo;
+          break;
+        case 7:
+          val = ++AF.hi;
+          break;
+        }
+        setFlag(FLAG_Z, val == 0);
+        setFlag(FLAG_N, false);
+        setFlag(FLAG_H,
+                (val & 0x0F) == 0); // h happens when lower nibble cascades,
+                                    // value after inc has lowest nibble 0
+        return 4;
+      } else if (op_type == 0x05) { // DEC r
+        uint8_t val = 0;
+        switch (r) {
+        case 0:
+          val = --BC.hi;
+          break;
+        case 1:
+          val = --BC.lo;
+          break;
+        case 2:
+          val = --DE.hi;
+          break;
+        case 3:
+          val = --DE.lo;
+          break;
+        case 4:
+          val = --HL.hi;
+          break;
+        case 5:
+          val = --HL.lo;
+          break;
+        case 7:
+          val = --AF.hi;
+          break;
+        }
+        setFlag(FLAG_Z, val == 0);
+        setFlag(FLAG_N, true);
+        setFlag(FLAG_H,
+                (val & 0x0F) == 0x0F); // h happens when borrowing from bit 4,
+                                       // so lower nibble becomes 0xF
+        return 4;
+      } else if (op_type == 0x06) { // LD r, n8
+        uint8_t val = fetch();
+        switch (r) {
+        case 0:
+          BC.hi = val;
+          break;
+        case 1:
+          BC.lo = val;
+          break;
+        case 2:
+          DE.hi = val;
+          break;
+        case 3:
+          DE.lo = val;
+          break;
+        case 4:
+          HL.hi = val;
+          break;
+        case 5:
+          HL.lo = val;
+          break;
+        case 7:
+          AF.hi = val;
+          break;
+        }
+        return 8;
+      }
+    }
+  }
+
+  // Handle LD r, r' generically (0x40 - 0x7F) omitting (HL)
+  if (opcode >= 0x40 && opcode <= 0x7F && opcode != 0x76) {
+    uint8_t r = (opcode >> 3) & 0x07;
+    uint8_t r_prime = opcode & 0x07;
+
+    // If neither is (HL), it's a register-to-register load
+    if (r != 6 && r_prime != 6) {
+      uint8_t val = 0;
+      switch (r_prime) {
+      case 0:
+        val = BC.hi;
+        break;
+      case 1:
+        val = BC.lo;
+        break;
+      case 2:
+        val = DE.hi;
+        break;
+      case 3:
+        val = DE.lo;
+        break;
+      case 4:
+        val = HL.hi;
+        break;
+      case 5:
+        val = HL.lo;
+        break;
+      case 7:
+        val = AF.hi;
+        break;
+      }
+
+      switch (r) {
+      case 0:
+        BC.hi = val;
+        break;
+      case 1:
+        BC.lo = val;
+        break;
+      case 2:
+        DE.hi = val;
+        break;
+      case 3:
+        DE.lo = val;
+        break;
+      case 4:
+        HL.hi = val;
+        break;
+      case 5:
+        HL.lo = val;
+        break;
+      case 7:
+        AF.hi = val;
+        break;
+      }
+      return 4;
+    }
+  }
+
   // Initial switch statement for execution.
   // 0x00 is NOP, which takes 4 T-cycles.
   switch (opcode) {
   case 0x00: // NOP
+    return 4;
+  case 0x17: { // RLA
+    bool old_c = getFlag(FLAG_C);
+    bool c = (AF.hi & 0x80) != 0;
+    AF.hi = (AF.hi << 1) | (old_c ? 1 : 0);
+    setFlag(FLAG_Z, false);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, c);
+    return 4;
+  }
+  case 0x1F: { // RRA
+    bool old_c = getFlag(FLAG_C);
+    bool c = (AF.hi & 0x01) != 0;
+    AF.hi = (AF.hi >> 1) | (old_c ? 0x80 : 0);
+    setFlag(FLAG_Z, false);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, c);
+    return 4;
+  }
+  case 0x27: { // DAA
+    uint16_t a = AF.hi;
+    if (getFlag(FLAG_N)) {
+      if (getFlag(FLAG_H))
+        a = (a - 0x6) & 0xFF;
+      if (getFlag(FLAG_C))
+        a -= 0x60;
+    } else {
+      if (getFlag(FLAG_H) || (a & 0xF) > 9)
+        a += 0x6;
+      if (getFlag(FLAG_C) || a > 0x9F)
+        a += 0x60;
+    }
+    setFlag(FLAG_H, false);
+    if (a & 0x100)
+      setFlag(FLAG_C, true);
+    a &= 0xFF;
+    AF.hi = static_cast<uint8_t>(a);
+    setFlag(FLAG_Z, AF.hi == 0);
+    return 4;
+  }
+  case 0x37: // SCF
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, true);
+    return 4;
+  case 0x3F: // CCF
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, false);
+    setFlag(FLAG_C, !getFlag(FLAG_C));
     return 4;
   case 0x01: // LD BC, n16
     BC.reg16 = fetch16();
@@ -274,6 +483,19 @@ int CPU::execute(uint8_t opcode) {
   case 0x33: // INC SP
     SP++;
     return 8;
+  case 0x38: { // JR C, n8
+    int8_t offset = static_cast<int8_t>(fetch());
+    if (getFlag(FLAG_C)) {
+      PC += offset;
+      return 12;
+    }
+    return 8;
+  }
+  case 0x10: { // STOP
+    fetch();   // Discard the next byte (0x00)
+    // Actually stopping is more complex, just treat as NOP/HALT for now
+    return 4;
+  }
   case 0x34: { // INC (HL)
     uint8_t val = bus.read(HL.reg16);
     bool h = (val & 0x0F) == 0x0F;
@@ -1170,6 +1392,32 @@ int CPU::execute(uint8_t opcode) {
   case 0xF2: // LD A, (C)
     AF.hi = bus.read(0xFF00 | BC.lo);
     return 8;
+  case 0xE8: { // ADD SP, r8
+    int8_t offset = static_cast<int8_t>(fetch());
+    uint16_t result = SP + offset;
+    setFlag(FLAG_Z, false);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, ((SP & 0x0F) + (offset & 0x0F)) > 0x0F);
+    setFlag(FLAG_C, ((SP & 0xFF) + (offset & 0xFF)) > 0xFF);
+    SP = result;
+    return 16;
+  }
+  case 0xE9: // JP (HL)
+    PC = HL.reg16;
+    return 4;
+  case 0xF8: { // LD HL, SP+r8
+    int8_t offset = static_cast<int8_t>(fetch());
+    uint16_t result = SP + offset;
+    setFlag(FLAG_Z, false);
+    setFlag(FLAG_N, false);
+    setFlag(FLAG_H, ((SP & 0x0F) + (offset & 0x0F)) > 0x0F);
+    setFlag(FLAG_C, ((SP & 0xFF) + (offset & 0xFF)) > 0xFF);
+    HL.reg16 = result;
+    return 12;
+  }
+  case 0xF9: // LD SP, HL
+    SP = HL.reg16;
+    return 8;
 
   case 0xF3: // DI
     IME = false;
@@ -1177,11 +1425,45 @@ int CPU::execute(uint8_t opcode) {
   case 0xFB: // EI
     IME = true;
     return 4;
+  case 0xC7:
+    pushStack(PC);
+    PC = 0x00;
+    return 16;
+  case 0xCF:
+    pushStack(PC);
+    PC = 0x08;
+    return 16;
+  case 0xD7:
+    pushStack(PC);
+    PC = 0x10;
+    return 16;
+  case 0xDF:
+    pushStack(PC);
+    PC = 0x18;
+    return 16;
+  case 0xE7:
+    pushStack(PC);
+    PC = 0x20;
+    return 16;
+  case 0xEF:
+    pushStack(PC);
+    PC = 0x28;
+    return 16;
+  case 0xF7:
+    pushStack(PC);
+    PC = 0x30;
+    return 16;
+  case 0xFF:
+    pushStack(PC);
+    PC = 0x38;
+    return 16;
+
   case 0xCB: // Prefix CB
     return executeCB(fetch());
 
   default:
-    // Placeholder for unimplemented opcodes
+    fprintf(stderr, "Unimplemented opcode: %02X at PC: %04X\n", opcode, PC - 1);
+    exit(1);
     return 0;
   }
 }
