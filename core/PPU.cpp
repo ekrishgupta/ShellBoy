@@ -22,6 +22,7 @@ void PPU::tick() {
 
     if (currentScanline > 153) {
       currentScanline = 0;
+      windowLineCounter = 0;
       updateStatus();
     }
   }
@@ -97,14 +98,31 @@ void PPU::renderScanline() {
     uint16_t tileData = (lcdc & 0x10) ? 0x8000 : 0x8800;
     bool unsig = (lcdc & 0x10) != 0;
 
-    uint8_t yPos = currentScanline + scy;
-    uint16_t tileRow = (yPos / 8) * 32;
+    bool windowVisible = (lcdc & 0x20) && (currentScanline >= wy);
+
+    bool windowUsedOnLine = false;
 
     for (int pixel = 0; pixel < 160; ++pixel) {
-      uint8_t xPos = pixel + scx;
-      uint16_t tileCol = xPos / 8;
+      int windowX = static_cast<int>(wx) - 7;
+      bool isWindow = windowVisible && (pixel >= windowX);
 
-      uint16_t tileAddr = tileMap + tileRow + tileCol;
+      uint16_t currentTileMap = tileMap;
+      uint8_t xPos, yPos;
+
+      if (isWindow) {
+        currentTileMap = (lcdc & 0x40) ? 0x9C00 : 0x9800;
+        xPos = pixel - windowX;
+        yPos = windowLineCounter;
+        windowUsedOnLine = true;
+      } else {
+        xPos = pixel + scx;
+        yPos = currentScanline + scy;
+      }
+
+      uint16_t tileRow = (yPos / 8) * 32;
+      uint16_t tileCol = xPos / 8;
+      uint16_t tileAddr = currentTileMap + tileRow + tileCol;
+
       int16_t tileNum;
       if (unsig) {
         tileNum = read(tileAddr);
@@ -123,18 +141,17 @@ void PPU::renderScanline() {
       uint8_t data1 = read(tileLocation + (line * 2));
       uint8_t data2 = read(tileLocation + (line * 2) + 1);
 
-      int colorBit = xPos % 8;
-      colorBit -= 7;
-      colorBit *= -1;
+      int colorBit = 7 - (xPos % 8);
 
       uint8_t colorNum = ((data2 >> colorBit) & 1) << 1;
       colorNum |= ((data1 >> colorBit) & 1);
 
-      // Map color through BGP palette
       uint8_t color = (bgp >> (colorNum * 2)) & 3;
+      frameBuffer[currentScanline * 160 + pixel] = color;
+    }
 
-      int bufferOffset = (currentScanline * 160) + pixel;
-      frameBuffer[bufferOffset] = color;
+    if (windowUsedOnLine) {
+      windowLineCounter++;
     }
   } else {
     // If BG is disabled, fill with color 0 (white)
