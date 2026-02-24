@@ -17,5 +17,11 @@ public:
 private:
   std::vector<uint8_t> rom;
   std::vector<uint8_t> ram;
-  int mbcType = 0;
+  int mbcType = 0; // 0: None, 1: MBC1, 2: MBC2, 3: MBC3, etc.
+
+  // Banking state
+  int romBank = 1;
+  int ramBank = 0;
+  bool ramEnabled = false;
+  int bankingMode = 0; // 0: ROM mode, 1: RAM mode
 };
