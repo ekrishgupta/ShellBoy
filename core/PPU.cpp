@@ -47,52 +47,56 @@ void PPU::renderScanline() {
   if ((lcdc & 0x80) == 0)
     return;
 
-  // Background Enable check
-  if ((lcdc & 0x01) == 0)
-    return;
+  // Background rendering
+  if (lcdc & 0x01) {
+    uint16_t tileMap = (lcdc & 0x08) ? 0x9C00 : 0x9800;
+    uint16_t tileData = (lcdc & 0x10) ? 0x8000 : 0x8800;
+    bool unsig = (lcdc & 0x10) != 0;
 
-  uint16_t tileMap = (lcdc & 0x08) ? 0x9C00 : 0x9800;
-  uint16_t tileData = (lcdc & 0x10) ? 0x8000 : 0x8800;
-  bool unsig = (lcdc & 0x10) != 0;
+    uint8_t yPos = currentScanline + scy;
+    uint16_t tileRow = (yPos / 8) * 32;
 
-  uint8_t yPos = currentScanline + scy;
-  uint16_t tileRow = (yPos / 8) * 32;
+    for (int pixel = 0; pixel < 160; ++pixel) {
+      uint8_t xPos = pixel + scx;
+      uint16_t tileCol = xPos / 8;
 
-  for (int pixel = 0; pixel < 160; ++pixel) {
-    uint8_t xPos = pixel + scx;
-    uint16_t tileCol = xPos / 8;
+      uint16_t tileAddr = tileMap + tileRow + tileCol;
+      int16_t tileNum;
+      if (unsig) {
+        tileNum = read(tileAddr);
+      } else {
+        tileNum = static_cast<int8_t>(read(tileAddr));
+      }
 
-    uint16_t tileAddr = tileMap + tileRow + tileCol;
-    int16_t tileNum;
-    if (unsig) {
-      tileNum = read(tileAddr);
-    } else {
-      tileNum = static_cast<int8_t>(read(tileAddr));
+      uint16_t tileLocation = tileData;
+      if (unsig) {
+        tileLocation += (tileNum * 16);
+      } else {
+        tileLocation += ((tileNum + 128) * 16);
+      }
+
+      uint8_t line = yPos % 8;
+      uint8_t data1 = read(tileLocation + (line * 2));
+      uint8_t data2 = read(tileLocation + (line * 2) + 1);
+
+      int colorBit = xPos % 8;
+      colorBit -= 7;
+      colorBit *= -1;
+
+      uint8_t colorNum = ((data2 >> colorBit) & 1) << 1;
+      colorNum |= ((data1 >> colorBit) & 1);
+
+      // Map color through BGP palette
+      uint8_t color = (bgp >> (colorNum * 2)) & 3;
+
+      int bufferOffset = (currentScanline * 160) + pixel;
+      frameBuffer[bufferOffset] = color;
     }
-
-    uint16_t tileLocation = tileData;
-    if (unsig) {
-      tileLocation += (tileNum * 16);
-    } else {
-      tileLocation += ((tileNum + 128) * 16);
+  } else {
+    // If BG is disabled, fill with color 0 (white)
+    for (int pixel = 0; pixel < 160; ++pixel) {
+      frameBuffer[currentScanline * 160 + pixel] = 0;
     }
-
-    uint8_t line = yPos % 8;
-    uint8_t data1 = read(tileLocation + (line * 2));
-    uint8_t data2 = read(tileLocation + (line * 2) + 1);
-
-    int colorBit = xPos % 8;
-    colorBit -= 7;
-    colorBit *= -1;
-
-    uint8_t colorNum = ((data2 >> colorBit) & 1) << 1;
-    colorNum |= ((data1 >> colorBit) & 1);
-
-    // Map color through BGP palette
-    uint8_t color = (bgp >> (colorNum * 2)) & 3;
-
-    int bufferOffset = (currentScanline * 160) + pixel;
-    frameBuffer[bufferOffset] = color;
   }
 
   renderSprites();
