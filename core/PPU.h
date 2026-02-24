@@ -20,8 +20,6 @@ public:
   };
 
   Mode getMode() const { return static_cast<Mode>(stat & 0x03); }
-  void setMode(Mode mode);
-  void updateStatus();
 
   uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
@@ -37,19 +35,16 @@ public:
   std::array<uint8_t, 160 * 144> frameBuffer{};
   bool frameReady = false;
 
-  enum class Mode { HBlank = 0, VBlank = 1, OAMSearch = 2, PixelTransfer = 3 };
-
-  Mode getMode() const { return static_cast<Mode>(stat & 0x03); }
-
 private:
   Bus &bus;
   int scanlineCounter = 456; // T-cycles per scanline
   uint8_t currentScanline = 0;
+  uint8_t windowLineCounter = 0;
 
-  void renderScanline();
-  void renderSprites();
   void setMode(Mode mode);
   void updateStatus();
+  void renderScanline();
+  void renderSprites();
 
   std::array<uint8_t, 0x2000> vram{};
   std::array<uint8_t, 0xA0> oam{};
