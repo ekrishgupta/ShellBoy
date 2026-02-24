@@ -1,4 +1,5 @@
 #include "Bus.h"
+#include "core/Joypad.h"
 #include "core/PPU.h"
 #include "core/Timer.h"
 #include "mmu/Cartridge.h"
@@ -11,7 +12,10 @@ Bus::Bus() {
 Bus::~Bus() {}
 
 uint8_t Bus::read(uint16_t address) const {
-  if (address >= ROM0_START && address <= ROM0_END) {
+  if (address == 0xFF00) {
+    if (joypad)
+      return joypad->read();
+  } else if (address >= ROM0_START && address <= ROM0_END) {
     if (cartridge)
       return cartridge->read(address);
   } else if (address >= ROMX_START && address <= ROMX_END) {
@@ -31,6 +35,8 @@ uint8_t Bus::read(uint16_t address) const {
   } else if (address >= 0xFF04 && address <= 0xFF07) {
     if (timer)
       return timer->read(address);
+  } else if (address == 0xFF46) {
+    return memory[0xFF46];
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
     if (ppu)
       return ppu->readReg(address);
@@ -39,7 +45,11 @@ uint8_t Bus::read(uint16_t address) const {
 }
 
 void Bus::write(uint16_t address, uint8_t value) {
-  if (address >= ROM0_START && address <= ROM0_END) {
+  if (address == 0xFF00) {
+    if (joypad)
+      joypad->write(value);
+    return;
+  } else if (address >= ROM0_START && address <= ROM0_END) {
     if (cartridge)
       cartridge->write(address, value);
     return;
@@ -66,6 +76,14 @@ void Bus::write(uint16_t address, uint8_t value) {
     if (timer)
       timer->write(address, value);
     return;
+  } else if (address == 0xFF46) {
+    // OAM DMA Transfer
+    uint16_t source = static_cast<uint16_t>(value) << 8;
+    for (uint16_t i = 0; i < 0xA0; i++) {
+      write(0xFE00 + i, read(source + i));
+    }
+    memory[0xFF46] = value;
+    return;
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
     if (ppu)
       ppu->writeReg(address, value);
@@ -90,6 +108,7 @@ void Bus::setCartridge(Cartridge *cart) { cartridge = cart; }
 void Bus::setPPU(PPU *pixel_unit) { ppu = pixel_unit; }
 
 void Bus::setTimer(Timer *t) { timer = t; }
+void Bus::setJoypad(Joypad *j) { joypad = j; }
 
 void Bus::requestInterrupt(uint8_t interrupt) {
   uint8_t if_reg = read(0xFF0F);
