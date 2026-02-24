@@ -1,5 +1,6 @@
 #include "core/Bus.h"
 #include "core/CPU.h"
+#include "core/Joypad.h"
 #include "core/PPU.h"
 #include "core/Timer.h"
 #include "frontend/BrailleRenderer.h"
@@ -31,8 +32,10 @@ int main(int argc, char **argv) {
   CPU cpu(bus);
   PPU ppu(bus);
   Timer timer(bus);
+  Joypad joypad(bus);
   bus.setPPU(&ppu);
   bus.setTimer(&timer);
+  bus.setJoypad(&joypad);
   BrailleRenderer renderer;
 
   auto screen = ScreenInteractive::TerminalOutput();
@@ -42,7 +45,49 @@ int main(int argc, char **argv) {
     std::string frameText = renderer.render(ppu.frameBuffer);
     return window(text("ShellBoy - DMG-01 Emulator"),
                   vbox({text("Frames: " + std::to_string(frames.load())),
-                        text(frameText)}));
+                        text("Controls: Arrows=D-Pad, Z=A, X=B, Enter=Start, "
+                             "Backspace=Select"),
+                        separator(), text(frameText)}));
+  });
+
+  renderer_component |= CatchEvent([&](Event event) {
+    if (event == Event::ArrowUp) {
+      joypad.pressButton(Joypad::UP);
+      return true;
+    }
+    if (event == Event::ArrowDown) {
+      joypad.pressButton(Joypad::DOWN);
+      return true;
+    }
+    if (event == Event::ArrowLeft) {
+      joypad.pressButton(Joypad::LEFT);
+      return true;
+    }
+    if (event == Event::ArrowRight) {
+      joypad.pressButton(Joypad::RIGHT);
+      return true;
+    }
+    if (event == Event::Character("z") || event == Event::Character("Z")) {
+      joypad.pressButton(Joypad::A);
+      return true;
+    }
+    if (event == Event::Character("x") || event == Event::Character("X")) {
+      joypad.pressButton(Joypad::B);
+      return true;
+    }
+    if (event == Event::Return) {
+      joypad.pressButton(Joypad::START);
+      return true;
+    }
+    if (event == Event::Backspace) {
+      joypad.pressButton(Joypad::SELECT);
+      return true;
+    }
+    if (event == Event::Character("q") || event == Event::Character("Q")) {
+      screen.Exit();
+      return true;
+    }
+    return false;
   });
 
   std::atomic<bool> running = true;
@@ -53,6 +98,16 @@ int main(int argc, char **argv) {
 
     while (running) {
       auto frameStart = std::chrono::high_resolution_clock::now();
+
+      // Clear joypad state at start of frame (simulate release for TUI)
+      joypad.releaseButton(Joypad::UP);
+      joypad.releaseButton(Joypad::DOWN);
+      joypad.releaseButton(Joypad::LEFT);
+      joypad.releaseButton(Joypad::RIGHT);
+      joypad.releaseButton(Joypad::A);
+      joypad.releaseButton(Joypad::B);
+      joypad.releaseButton(Joypad::SELECT);
+      joypad.releaseButton(Joypad::START);
 
       // Run CPU and PPU until a frame is ready
       // A full frame is 70224 T-cycles
