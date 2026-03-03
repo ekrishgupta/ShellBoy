@@ -94,7 +94,7 @@ void Serial::tick(uint32_t cycles) {
 
     // Print to stdout (Blargg convention)
     if (sb != 0x00 && sb != 0xFF) {
-      // std::cout << (char)sb << std::flush;
+      std::cout << (char)sb << std::flush;
     }
 
     // Request Serial interrupt
