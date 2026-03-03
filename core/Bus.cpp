@@ -44,6 +44,8 @@ uint8_t Bus::read(uint16_t address) const {
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
     if (ppu)
       return ppu->readReg(address);
+  } else if (address == 0xFF4D) {
+    return key1 | 0x7E;
   } else if (address == 0xFF4F) {
     if (ppu)
       return ppu->readReg(address);
@@ -119,6 +121,9 @@ void Bus::write(uint16_t address, uint8_t value) {
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
     if (ppu)
       ppu->writeReg(address, value);
+    return;
+  } else if (address == 0xFF4D) {
+    key1 = (key1 & 0x80) | (value & 0x01);
     return;
   } else if (address == 0xFF4F) {
     if (ppu)

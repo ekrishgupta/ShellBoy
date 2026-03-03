@@ -80,11 +80,16 @@ int CPU::tick() {
   handleInterrupts();
 
   if (halted) {
-    return 4; // CPU in HALT still consumes cycles (mostly)
+    return (bus.read(0xFF4D) & 0x80) ? 2 : 4;
   }
 
   uint8_t opcode = fetch();
-  return execute(opcode);
+  int cycles = execute(opcode);
+
+  if (bus.read(0xFF4D) & 0x80) {
+    cycles /= 2;
+  }
+  return cycles;
 }
 
 int CPU::execute(uint8_t opcode) {
@@ -493,7 +498,13 @@ int CPU::execute(uint8_t opcode) {
   }
   case 0x10: { // STOP
     fetch();   // Discard the next byte (0x00)
-    // Actually stopping is more complex, just treat as NOP/HALT for now
+    uint8_t k1 = bus.read(0xFF4D);
+    if (k1 & 0x01) {
+      // Speed switch
+      bus.write(0xFF4D, (k1 & 0x80) ? 0x00 : 0x80);
+    } else {
+      halted = true; // Optional: Treat other stops as sleep if needed
+    }
     return 4;
   }
   case 0x34: { // INC (HL)
