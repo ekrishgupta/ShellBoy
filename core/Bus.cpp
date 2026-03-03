@@ -47,6 +47,16 @@ uint8_t Bus::read(uint16_t address) const {
   } else if (address == 0xFF4F) {
     if (ppu)
       return ppu->readReg(address);
+  } else if (address == 0xFF51) {
+    return hdma1;
+  } else if (address == 0xFF52) {
+    return hdma2;
+  } else if (address == 0xFF53) {
+    return hdma3;
+  } else if (address == 0xFF54) {
+    return hdma4;
+  } else if (address == 0xFF55) {
+    return hdmaActive ? (hdmaLength - 1) : 0xFF;
   } else if (address >= WRAM_START && address <= WRAM_END) {
     if (address < 0xD000) {
       return wram[address - 0xC000];
@@ -111,6 +121,38 @@ void Bus::write(uint16_t address, uint8_t value) {
     if (ppu)
       ppu->writeReg(address, value);
     return;
+  } else if (address == 0xFF51) {
+    hdma1 = value;
+    return;
+  } else if (address == 0xFF52) {
+    hdma2 = value & 0xF0;
+    return;
+  } else if (address == 0xFF53) {
+    hdma3 = value & 0x1F;
+    return;
+  } else if (address == 0xFF54) {
+    hdma4 = value & 0xF0;
+    return;
+  } else if (address == 0xFF55) {
+    if (hdmaActive && (value & 0x80) == 0) {
+      hdmaActive = false;
+      hdma5 = value | 0x80;
+    } else {
+      hdmaLength = (value & 0x7F) + 1;
+      hdmaSource = (hdma1 << 8) | hdma2;
+      hdmaDest = 0x8000 | ((hdma3 << 8) | hdma4);
+      if ((value & 0x80) == 0) {
+        for (int i = 0; i < hdmaLength * 0x10; i++) {
+          write(hdmaDest + i, read(hdmaSource + i));
+        }
+        hdmaActive = false;
+        hdma5 = 0xFF;
+      } else {
+        hdmaActive = true;
+        hdma5 = value & 0x7F;
+      }
+    }
+    return;
   } else if (address >= WRAM_START && address <= WRAM_END) {
     if (address < 0xD000) {
       wram[address - 0xC000] = value;
@@ -149,4 +191,19 @@ void Bus::setSerial(Serial *s) { serial = s; }
 void Bus::requestInterrupt(uint8_t interrupt) {
   uint8_t if_reg = read(0xFF0F);
   write(0xFF0F, if_reg | interrupt);
+}
+
+void Bus::processHDMA() {
+  if (!hdmaActive)
+    return;
+
+  for (int i = 0; i < 0x10; i++) {
+    write(hdmaDest++, read(hdmaSource++));
+  }
+  hdmaLength--;
+
+  if (hdmaLength == 0) {
+    hdmaActive = false;
+    hdma5 = 0xFF;
+  }
 }

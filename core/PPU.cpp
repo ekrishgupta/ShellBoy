@@ -58,6 +58,7 @@ void PPU::setMode(Mode mode) {
   switch (mode) {
   case Mode::HBlank:
     interrupt = (stat & 0x08);
+    bus.processHDMA();
     break;
   case Mode::VBlank:
     interrupt = (stat & 0x10);

@@ -34,6 +34,7 @@ public:
   static constexpr uint8_t INTERRUPT_JOYPAD = 0x10;
 
   void requestInterrupt(uint8_t interrupt);
+  void processHDMA();
 
 private:
   static constexpr uint16_t ROM0_START = 0x0000;
@@ -62,6 +63,16 @@ private:
 
   std::array<uint8_t, 8 * 0x1000> wram{}; // 8 banks of 4KB
   uint8_t wramBank = 1;
+
+  uint8_t hdma1 = 0xFF;
+  uint8_t hdma2 = 0xFF;
+  uint8_t hdma3 = 0xFF;
+  uint8_t hdma4 = 0xFF;
+  uint8_t hdma5 = 0xFF;
+  bool hdmaActive = false;
+  uint16_t hdmaSource = 0;
+  uint16_t hdmaDest = 0;
+  uint8_t hdmaLength = 0;
 
   Cartridge *cartridge = nullptr;
   PPU *ppu = nullptr;
