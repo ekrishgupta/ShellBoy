@@ -14,10 +14,15 @@ public:
   uint8_t read(uint16_t address) const;
   void write(uint16_t address, uint8_t value);
 
+  void saveBattery();
+  void loadBattery();
+
 private:
   std::vector<uint8_t> rom;
   std::vector<uint8_t> ram;
   int mbcType = 0; // 0: None, 1: MBC1, 2: MBC2, 3: MBC3, etc.
+  bool hasBattery = false;
+  std::string savePath;
 
   // Banking state
   int romBank = 1;

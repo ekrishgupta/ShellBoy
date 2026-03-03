@@ -2,6 +2,7 @@
 #include "core/CPU.h"
 #include "core/Joypad.h"
 #include "core/PPU.h"
+#include "core/Serial.h"
 #include "core/Timer.h"
 #include "frontend/BrailleRenderer.h"
 #include "ftxui/component/component.hpp"
@@ -33,9 +34,11 @@ int main(int argc, char **argv) {
   PPU ppu(bus);
   Timer timer(bus);
   Joypad joypad(bus);
+  Serial serial(&bus);
   bus.setPPU(&ppu);
   bus.setTimer(&timer);
   bus.setJoypad(&joypad);
+  bus.setSerial(&serial);
   BrailleRenderer renderer;
 
   auto screen = ScreenInteractive::TerminalOutput();
@@ -115,6 +118,7 @@ int main(int argc, char **argv) {
       while (cyclesThisFrame < 70224) {
         int cycles = cpu.tick(); // CPU is currently a stub NOP taking 4 cycles
         timer.tick(cycles);
+        serial.tick(cycles);
         for (int i = 0; i < cycles; ++i) {
           ppu.tick();
         }
