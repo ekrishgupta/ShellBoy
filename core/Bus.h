@@ -58,7 +58,10 @@ private:
   static constexpr uint16_t HRAM_END = 0xFFFE;
   static constexpr uint16_t IE_REG = 0xFFFF;
 
-  std::array<uint8_t, 0x10000> memory{}; // Simple 64KB memory map for now
+  std::array<uint8_t, 0x10000> memory{};
+
+  std::array<uint8_t, 8 * 0x1000> wram{}; // 8 banks of 4KB
+  uint8_t wramBank = 1;
 
   Cartridge *cartridge = nullptr;
   PPU *ppu = nullptr;

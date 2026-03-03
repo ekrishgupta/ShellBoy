@@ -1,6 +1,7 @@
 #include "Bus.h"
 #include "core/Joypad.h"
 #include "core/PPU.h"
+#include "core/Serial.h"
 #include "core/Timer.h"
 #include "mmu/Cartridge.h"
 
@@ -15,6 +16,9 @@ uint8_t Bus::read(uint16_t address) const {
   if (address == 0xFF00) {
     if (joypad)
       return joypad->read();
+  } else if (address == 0xFF01 || address == 0xFF02) {
+    if (serial)
+      return serial->read(address);
   } else if (address >= ROM0_START && address <= ROM0_END) {
     if (cartridge)
       return cartridge->read(address);
@@ -28,7 +32,7 @@ uint8_t Bus::read(uint16_t address) const {
     if (cartridge)
       return cartridge->read(address);
   } else if (address >= ECHO_START && address <= ECHO_END) {
-    return memory[address - 0x2000];
+    return read(address - 0x2000);
   } else if (address >= OAM_START && address <= OAM_END) {
     if (ppu)
       return ppu->readOAM(address);
@@ -40,6 +44,14 @@ uint8_t Bus::read(uint16_t address) const {
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
     if (ppu)
       return ppu->readReg(address);
+  } else if (address >= WRAM_START && address <= WRAM_END) {
+    if (address < 0xD000) {
+      return wram[address - 0xC000];
+    } else {
+      return wram[(wramBank * 0x1000) + (address - 0xD000)];
+    }
+  } else if (address == 0xFF70) {
+    return wramBank;
   }
   return memory[address];
 }
@@ -48,6 +60,10 @@ void Bus::write(uint16_t address, uint8_t value) {
   if (address == 0xFF00) {
     if (joypad)
       joypad->write(value);
+    return;
+  } else if (address == 0xFF01 || address == 0xFF02) {
+    if (serial)
+      serial->write(address, value);
     return;
   } else if (address >= ROM0_START && address <= ROM0_END) {
     if (cartridge)
@@ -66,7 +82,7 @@ void Bus::write(uint16_t address, uint8_t value) {
       cartridge->write(address, value);
     return;
   } else if (address >= ECHO_START && address <= ECHO_END) {
-    memory[address - 0x2000] = value;
+    write(address - 0x2000, value);
     return;
   } else if (address >= OAM_START && address <= OAM_END) {
     if (ppu)
@@ -87,6 +103,18 @@ void Bus::write(uint16_t address, uint8_t value) {
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
     if (ppu)
       ppu->writeReg(address, value);
+    return;
+  } else if (address >= WRAM_START && address <= WRAM_END) {
+    if (address < 0xD000) {
+      wram[address - 0xC000] = value;
+    } else {
+      wram[(wramBank * 0x1000) + (address - 0xD000)] = value;
+    }
+    return;
+  } else if (address == 0xFF70) {
+    wramBank = value & 0x07;
+    if (wramBank == 0)
+      wramBank = 1;
     return;
   }
   memory[address] = value;
@@ -109,6 +137,7 @@ void Bus::setPPU(PPU *pixel_unit) { ppu = pixel_unit; }
 
 void Bus::setTimer(Timer *t) { timer = t; }
 void Bus::setJoypad(Joypad *j) { joypad = j; }
+void Bus::setSerial(Serial *s) { serial = s; }
 
 void Bus::requestInterrupt(uint8_t interrupt) {
   uint8_t if_reg = read(0xFF0F);
