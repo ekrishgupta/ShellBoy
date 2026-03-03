@@ -57,6 +57,9 @@ uint8_t Bus::read(uint16_t address) const {
     return hdma4;
   } else if (address == 0xFF55) {
     return hdmaActive ? (hdmaLength - 1) : 0xFF;
+  } else if (address >= 0xFF68 && address <= 0xFF6B) {
+    if (ppu)
+      return ppu->readReg(address);
   } else if (address >= WRAM_START && address <= WRAM_END) {
     if (address < 0xD000) {
       return wram[address - 0xC000];
