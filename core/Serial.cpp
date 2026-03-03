@@ -42,7 +42,7 @@ void Serial::write(uint16_t address, uint8_t value) {
         // If connected, send the byte
         std::lock_guard<std::mutex> lock(net_mutex);
         if (is_connected) {
-          write(client_fd, &sb, 1);
+          ::write(client_fd, &sb, 1);
         }
       } else {
         // External clock - wait for incoming byte
@@ -81,7 +81,7 @@ void Serial::tick(uint32_t cycles) {
 
       // When slave receives a byte, it should probably send its own SB back
       if (is_connected) {
-        write(client_fd, &sb, 1);
+        ::write(client_fd, &sb, 1);
       }
     }
     // Also timeout or something? Usually slaves wait indefinitely.
@@ -144,7 +144,7 @@ void Serial::listenThread() {
 
       while (!quit && is_connected) {
         uint8_t buffer;
-        int valread = read(client_fd, &buffer, 1);
+        int valread = ::read(client_fd, &buffer, 1);
         if (valread == 1) {
           std::lock_guard<std::mutex> lock(net_mutex);
           received_byte = buffer;
@@ -180,7 +180,7 @@ void Serial::connectThread() {
 
       while (!quit && is_connected) {
         uint8_t buffer;
-        int valread = read(client_fd, &buffer, 1);
+        int valread = ::read(client_fd, &buffer, 1);
         if (valread == 1) {
           std::lock_guard<std::mutex> lock(net_mutex);
           received_byte = buffer;
