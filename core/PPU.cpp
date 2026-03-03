@@ -275,14 +275,14 @@ uint8_t PPU::read(uint16_t address) const {
   if (getMode() == Mode::PixelTransfer) {
     return 0xFF;
   }
-  return vram[address - 0x8000];
+  return vram[(vramBank * 0x2000) + (address - 0x8000)];
 }
 
 void PPU::write(uint16_t address, uint8_t value) {
   if (getMode() == Mode::PixelTransfer) {
     return;
   }
-  vram[address - 0x8000] = value;
+  vram[(vramBank * 0x2000) + (address - 0x8000)] = value;
 }
 
 uint8_t PPU::readReg(uint16_t address) const {
@@ -309,6 +309,8 @@ uint8_t PPU::readReg(uint16_t address) const {
     return wy;
   case 0xFF4B:
     return wx;
+  case 0xFF4F:
+    return vramBank | 0xFE;
   default:
     return 0xFF; // Unmapped PPU registers return 0xFF
   }
@@ -345,6 +347,9 @@ void PPU::writeReg(uint16_t address, uint8_t value) {
     break;
   case 0xFF4B:
     wx = value;
+    break;
+  case 0xFF4F:
+    vramBank = value & 0x01;
     break;
   }
 }

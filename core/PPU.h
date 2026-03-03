@@ -46,8 +46,9 @@ private:
   void renderScanline();
   void renderSprites();
 
-  std::array<uint8_t, 0x2000> vram{};
+  std::array<uint8_t, 0x4000> vram{};
   std::array<uint8_t, 0xA0> oam{};
+  uint8_t vramBank = 0;
 
   uint8_t lcdc = 0;
   uint8_t stat = 0;

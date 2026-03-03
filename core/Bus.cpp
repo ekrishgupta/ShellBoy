@@ -44,6 +44,9 @@ uint8_t Bus::read(uint16_t address) const {
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
     if (ppu)
       return ppu->readReg(address);
+  } else if (address == 0xFF4F) {
+    if (ppu)
+      return ppu->readReg(address);
   } else if (address >= WRAM_START && address <= WRAM_END) {
     if (address < 0xD000) {
       return wram[address - 0xC000];
@@ -101,6 +104,10 @@ void Bus::write(uint16_t address, uint8_t value) {
     memory[0xFF46] = value;
     return;
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
+    if (ppu)
+      ppu->writeReg(address, value);
+    return;
+  } else if (address == 0xFF4F) {
     if (ppu)
       ppu->writeReg(address, value);
     return;
