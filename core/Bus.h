@@ -7,6 +7,7 @@ class Cartridge;
 class PPU;
 class Timer;
 class Joypad;
+class Serial;
 
 class Bus {
 public:
@@ -23,6 +24,7 @@ public:
   void setPPU(PPU *pixel_unit);
   void setTimer(Timer *t);
   void setJoypad(Joypad *j);
+  void setSerial(Serial *s);
 
   // Interrupt Bit Constants
   static constexpr uint8_t INTERRUPT_VBLANK = 0x01;
@@ -62,4 +64,5 @@ private:
   PPU *ppu = nullptr;
   Timer *timer = nullptr;
   Joypad *joypad = nullptr;
+  Serial *serial = nullptr;
 };

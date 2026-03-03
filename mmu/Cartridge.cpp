@@ -44,11 +44,9 @@ bool Cartridge::loadRom(const std::string &filepath) {
       ram.resize(0);
       break;
     }
+    return true;
   }
-  return true;
-}
-
-return false;
+  return false;
 }
 
 uint8_t Cartridge::read(uint16_t address) const {
