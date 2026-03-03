@@ -1,9 +1,22 @@
 #include "Serial.h"
 #include "Bus.h"
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
-Serial::Serial(Bus *bus) : bus(bus) {}
+Serial::Serial(Bus *bus) : bus(bus) { initNetwork(); }
 
-Serial::~Serial() {}
+Serial::~Serial() {
+  quit = true;
+  if (net_thread.joinable())
+    net_thread.join();
+  if (server_fd != -1)
+    close(server_fd);
+  if (client_fd != -1)
+    close(client_fd);
+}
 
 uint8_t Serial::read(uint16_t address) const {
   if (address == 0xFF01) {

@@ -2,7 +2,7 @@
 #include <fstream>
 
 Cartridge::Cartridge() {}
-Cartridge::~Cartridge() {}
+Cartridge::~Cartridge() { saveBattery(); }
 
 bool Cartridge::loadRom(const std::string &filepath) {
   std::ifstream file(filepath, std::ios::binary | std::ios::ate);
@@ -15,6 +15,10 @@ bool Cartridge::loadRom(const std::string &filepath) {
   rom.resize(size);
   if (file.read(reinterpret_cast<char *>(rom.data()), size)) {
     uint8_t type = rom[0x147];
+    hasBattery =
+        (type == 0x03 || type == 0x06 || type == 0x09 || type == 0x0F ||
+         type == 0x10 || type == 0x13 || type == 0x1B || type == 0x1E);
+
     if (type >= 0x01 && type <= 0x03)
       mbcType = 1; // MBC1
     else if (type >= 0x0F && type <= 0x13)
@@ -23,6 +27,13 @@ bool Cartridge::loadRom(const std::string &filepath) {
       mbcType = 5; // MBC5
     else
       mbcType = 0; // ROM ONLY or unimplemented
+
+    size_t lastDot = filepath.find_last_of('.');
+    if (lastDot != std::string::npos) {
+      savePath = filepath.substr(0, lastDot) + ".sav";
+    } else {
+      savePath = filepath + ".sav";
+    }
 
     switch (rom[0x149]) {
     case 1:
@@ -44,6 +55,7 @@ bool Cartridge::loadRom(const std::string &filepath) {
       ram.resize(0);
       break;
     }
+    loadBattery();
     return true;
   }
   return false;
@@ -147,5 +159,23 @@ void Cartridge::write(uint16_t address, uint8_t value) {
         ram[offset] = value;
       }
     }
+  }
+}
+
+void Cartridge::saveBattery() {
+  if (!hasBattery || ram.empty())
+    return;
+  std::ofstream file(savePath, std::ios::binary | std::ios::trunc);
+  if (file.is_open()) {
+    file.write(reinterpret_cast<const char *>(ram.data()), ram.size());
+  }
+}
+
+void Cartridge::loadBattery() {
+  if (!hasBattery || ram.empty())
+    return;
+  std::ifstream file(savePath, std::ios::binary);
+  if (file.is_open()) {
+    file.read(reinterpret_cast<char *>(ram.data()), ram.size());
   }
 }
