@@ -45,11 +45,12 @@ public:
 
   bool IME; // Interrupt Master Enable
 
-  void handleInterrupts();
+  int handleInterrupts();
 
 private:
   Bus &bus;
   bool halted = false;
+  bool haltBug = false;
 
   uint8_t fetch();
   uint16_t fetch16();

@@ -39,18 +39,18 @@ uint16_t CPU::popStack() {
   return value;
 }
 
-void CPU::handleInterrupts() {
+int CPU::handleInterrupts() {
   uint8_t ie = bus.read(0xFFFF);
   uint8_t if_reg = bus.read(0xFF0F);
-  uint8_t pending = ie & if_reg;
+  uint8_t pending = ie & if_reg & 0x1F;
 
   if (pending == 0)
-    return;
+    return 0;
 
   halted = false;
 
   if (!IME)
-    return;
+    return 0;
 
   // Interrupts priority: V-Blank > LCD Stat > Timer > Serial > Joypad
   for (int i = 0; i < 5; ++i) {
@@ -59,14 +59,19 @@ void CPU::handleInterrupts() {
       bus.write(0xFF0F, if_reg & ~(1 << i)); // Clear the specific interrupt bit
       pushStack(PC);
       PC = 0x40 + (i * 0x08);
-      break;
+      return 20; // Interrupt dispatch takes 20 T-cycles
     }
   }
+  return 0;
 }
 
 uint8_t CPU::fetch() {
   uint8_t val = bus.read(PC);
-  PC++;
+  if (haltBug) {
+    haltBug = false;
+  } else {
+    PC++;
+  }
   return val;
 }
 
@@ -77,7 +82,9 @@ uint16_t CPU::fetch16() {
 }
 
 int CPU::tick() {
-  handleInterrupts();
+  int intCycles = handleInterrupts();
+  if (intCycles > 0)
+    return intCycles;
 
   if (halted) {
     return (bus.read(0xFF4D) & 0x80) ? 2 : 4;
@@ -588,9 +595,16 @@ int CPU::execute(uint8_t opcode) {
   case 0x75: // LD (HL), L
     bus.write(HL.reg16, HL.lo);
     return 8;
-  case 0x76: // HALT
-    halted = true;
+  case 0x76: { // HALT
+    uint8_t ie = bus.read(0xFFFF);
+    uint8_t if_reg = bus.read(0xFF0F);
+    if (!IME && (ie & if_reg & 0x1F) != 0) {
+      haltBug = true;
+    } else {
+      halted = true;
+    }
     return 4;
+  }
   case 0x77: // LD (HL), A
     bus.write(HL.reg16, AF.hi);
     return 8;
