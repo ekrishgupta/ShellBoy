@@ -312,6 +312,14 @@ uint8_t PPU::readReg(uint16_t address) const {
     return wx;
   case 0xFF4F:
     return vramBank | 0xFE;
+  case 0xFF68:
+    return bgPaletteIndex;
+  case 0xFF69:
+    return bgPalettes[bgPaletteIndex & 0x3F];
+  case 0xFF6A:
+    return objPaletteIndex;
+  case 0xFF6B:
+    return objPalettes[objPaletteIndex & 0x3F];
   default:
     return 0xFF; // Unmapped PPU registers return 0xFF
   }
@@ -351,6 +359,26 @@ void PPU::writeReg(uint16_t address, uint8_t value) {
     break;
   case 0xFF4F:
     vramBank = value & 0x01;
+    break;
+  case 0xFF68:
+    bgPaletteIndex = value;
+    break;
+  case 0xFF69:
+    bgPalettes[bgPaletteIndex & 0x3F] = value;
+    if (bgPaletteIndex & 0x80) {
+      uint8_t nextIdx = (bgPaletteIndex & 0x3F) + 1;
+      bgPaletteIndex = (bgPaletteIndex & 0x80) | (nextIdx & 0x3F);
+    }
+    break;
+  case 0xFF6A:
+    objPaletteIndex = value;
+    break;
+  case 0xFF6B:
+    objPalettes[objPaletteIndex & 0x3F] = value;
+    if (objPaletteIndex & 0x80) {
+      uint8_t nextIdx = (objPaletteIndex & 0x3F) + 1;
+      objPaletteIndex = (objPaletteIndex & 0x80) | (nextIdx & 0x3F);
+    }
     break;
   }
 }

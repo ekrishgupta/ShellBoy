@@ -153,6 +153,10 @@ void Bus::write(uint16_t address, uint8_t value) {
       }
     }
     return;
+  } else if (address >= 0xFF68 && address <= 0xFF6B) {
+    if (ppu)
+      ppu->writeReg(address, value);
+    return;
   } else if (address >= WRAM_START && address <= WRAM_END) {
     if (address < 0xD000) {
       wram[address - 0xC000] = value;

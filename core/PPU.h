@@ -60,4 +60,9 @@ private:
   uint8_t obp1 = 0;
   uint8_t wy = 0;
   uint8_t wx = 0;
+
+  std::array<uint8_t, 64> bgPalettes{};
+  std::array<uint8_t, 64> objPalettes{};
+  uint8_t bgPaletteIndex = 0;
+  uint8_t objPaletteIndex = 0;
 };

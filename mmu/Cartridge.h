@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -17,6 +18,10 @@ public:
   void saveBattery();
   void loadBattery();
 
+  void updateRtc();
+  void saveRtc();
+  void loadRtc();
+
 private:
   std::vector<uint8_t> rom;
   std::vector<uint8_t> ram;
@@ -32,6 +37,8 @@ private:
 
   // MBC3 RTC
   uint8_t rtcRegisters[5] = {0}; // S, M, H, DL, DH
+  uint8_t rtcLatched[5] = {0};
+  uint64_t rtcLastTime = 0;
   int rtcMappedBank = 0;
   bool rtcLatch = false;
 

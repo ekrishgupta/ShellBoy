@@ -2,7 +2,10 @@
 #include <fstream>
 
 Cartridge::Cartridge() {}
-Cartridge::~Cartridge() { saveBattery(); }
+Cartridge::~Cartridge() {
+  saveBattery();
+  saveRtc();
+}
 
 bool Cartridge::loadRom(const std::string &filepath) {
   std::ifstream file(filepath, std::ios::binary | std::ios::ate);
@@ -56,6 +59,7 @@ bool Cartridge::loadRom(const std::string &filepath) {
       break;
     }
     loadBattery();
+    loadRtc();
     return true;
   }
   return false;
@@ -74,7 +78,7 @@ uint8_t Cartridge::read(uint16_t address) const {
   } else if (address >= 0xA000 && address <= 0xBFFF) {
     if (ramEnabled) {
       if (mbcType == 3 && ramBank >= 0x08 && ramBank <= 0x0C) {
-        return rtcRegisters[ramBank - 0x08];
+        return rtcLatched[ramBank - 0x08];
       }
       uint32_t mapped = (ramBank * 0x2000) + (address - 0xA000);
       if (mapped < ram.size())
@@ -121,8 +125,10 @@ void Cartridge::write(uint16_t address, uint8_t value) {
       ramBank = value;
     } else if (address < 0x8000) {
       if (rtcLatch == 0 && value == 1) {
-        // In a real implementation, we would capture the current time here.
-        // For now, we just acknowledge the latch signal.
+        updateRtc();
+        for (int i = 0; i < 5; i++) {
+          rtcLatched[i] = rtcRegisters[i];
+        }
       }
       rtcLatch = value;
     }
@@ -144,6 +150,7 @@ void Cartridge::write(uint16_t address, uint8_t value) {
   if (address >= 0xA000 && address <= 0xBFFF) {
     if (ramEnabled) {
       if (mbcType == 3 && ramBank >= 0x08 && ramBank <= 0x0C) {
+        updateRtc();
         rtcRegisters[ramBank - 0x08] = value;
         return;
       }
@@ -177,5 +184,77 @@ void Cartridge::loadBattery() {
   std::ifstream file(savePath, std::ios::binary);
   if (file.is_open()) {
     file.read(reinterpret_cast<char *>(ram.data()), ram.size());
+  }
+}
+
+void Cartridge::updateRtc() {
+  if (mbcType != 3)
+    return;
+
+  auto now = std::chrono::system_clock::now();
+  uint64_t currentUnixTime =
+      std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
+          .count();
+  int64_t elapsed = currentUnixTime - rtcLastTime;
+  rtcLastTime = currentUnixTime;
+
+  if (elapsed <= 0)
+    return;
+
+  if (rtcRegisters[4] & 0x40) {
+    return;
+  }
+
+  uint64_t seconds = rtcRegisters[0] + elapsed;
+  rtcRegisters[0] = seconds % 60;
+
+  uint64_t minutes = rtcRegisters[1] + (seconds / 60);
+  rtcRegisters[1] = minutes % 60;
+
+  uint64_t hours = rtcRegisters[2] + (minutes / 60);
+  rtcRegisters[2] = hours % 24;
+
+  uint64_t daysElapsed = hours / 24;
+  if (daysElapsed > 0) {
+    uint32_t currentDays = rtcRegisters[3] | ((rtcRegisters[4] & 0x01) << 8);
+    currentDays += daysElapsed;
+    if (currentDays > 0x1FF) {
+      rtcRegisters[4] |= 0x80;
+      currentDays &= 0x1FF;
+    }
+    rtcRegisters[3] = currentDays & 0xFF;
+    rtcRegisters[4] = (rtcRegisters[4] & 0xFE) | ((currentDays >> 8) & 0x01);
+  }
+}
+
+void Cartridge::saveRtc() {
+  if (mbcType != 3 || !hasBattery)
+    return;
+  std::string rtcPath = savePath.substr(0, savePath.find_last_of('.')) + ".rtc";
+  std::ofstream file(rtcPath, std::ios::binary | std::ios::trunc);
+  if (file.is_open()) {
+    updateRtc();
+    file.write(reinterpret_cast<const char *>(rtcRegisters), 5);
+    file.write(reinterpret_cast<const char *>(rtcLatched), 5);
+    file.write(reinterpret_cast<const char *>(&rtcLastTime),
+               sizeof(rtcLastTime));
+  }
+}
+
+void Cartridge::loadRtc() {
+  if (mbcType != 3 || !hasBattery)
+    return;
+  std::string rtcPath = savePath.substr(0, savePath.find_last_of('.')) + ".rtc";
+  std::ifstream file(rtcPath, std::ios::binary);
+  if (file.is_open()) {
+    file.read(reinterpret_cast<char *>(rtcRegisters), 5);
+    file.read(reinterpret_cast<char *>(rtcLatched), 5);
+    file.read(reinterpret_cast<char *>(&rtcLastTime), sizeof(rtcLastTime));
+    updateRtc();
+  } else {
+    auto now = std::chrono::system_clock::now();
+    rtcLastTime =
+        std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
+            .count();
   }
 }
