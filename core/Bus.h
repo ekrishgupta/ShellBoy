@@ -35,6 +35,7 @@ public:
 
   void requestInterrupt(uint8_t interrupt);
   void processHDMA();
+  void tick(int tCycles);
 
 private:
   static constexpr uint16_t ROM0_START = 0x0000;
@@ -59,6 +60,9 @@ private:
   static constexpr uint16_t HRAM_END = 0xFFFE;
   static constexpr uint16_t IE_REG = 0xFFFF;
 
+  uint8_t readRaw(uint16_t address) const;
+  void writeRaw(uint16_t address, uint8_t value);
+
   std::array<uint8_t, 0x10000> memory{};
 
   uint8_t key1 = 0x00;
@@ -75,6 +79,11 @@ private:
   uint16_t hdmaSource = 0;
   uint16_t hdmaDest = 0;
   uint8_t hdmaLength = 0;
+
+  bool oamDmaActive = false;
+  uint16_t oamDmaSource = 0;
+  uint8_t oamDmaCurrentByte = 0;
+  uint16_t oamDmaClock = 0;
 
   Cartridge *cartridge = nullptr;
   PPU *ppu = nullptr;

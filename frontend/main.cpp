@@ -117,6 +117,7 @@ int main(int argc, char **argv) {
       int cyclesThisFrame = 0;
       while (cyclesThisFrame < 70224) {
         int cycles = cpu.tick(); // CPU is currently a stub NOP taking 4 cycles
+        bus.tick(cycles);
         timer.tick(cycles);
         serial.tick(cycles);
         for (int i = 0; i < cycles; ++i) {

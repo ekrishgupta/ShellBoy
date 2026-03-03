@@ -13,6 +13,20 @@ Bus::Bus() {
 Bus::~Bus() {}
 
 uint8_t Bus::read(uint16_t address) const {
+  if (oamDmaActive && (address < 0xFF80 || address > 0xFFFE)) {
+    return 0xFF;
+  }
+  return readRaw(address);
+}
+
+void Bus::write(uint16_t address, uint8_t value) {
+  if (oamDmaActive && (address < 0xFF80 || address > 0xFFFE)) {
+    return;
+  }
+  writeRaw(address, value);
+}
+
+uint8_t Bus::readRaw(uint16_t address) const {
   if (address == 0xFF00) {
     if (joypad)
       return joypad->read();
@@ -32,7 +46,7 @@ uint8_t Bus::read(uint16_t address) const {
     if (cartridge)
       return cartridge->read(address);
   } else if (address >= ECHO_START && address <= ECHO_END) {
-    return read(address - 0x2000);
+    return readRaw(address - 0x2000);
   } else if (address >= OAM_START && address <= OAM_END) {
     if (ppu)
       return ppu->readOAM(address);
@@ -74,7 +88,7 @@ uint8_t Bus::read(uint16_t address) const {
   return memory[address];
 }
 
-void Bus::write(uint16_t address, uint8_t value) {
+void Bus::writeRaw(uint16_t address, uint8_t value) {
   if (address == 0xFF00) {
     if (joypad)
       joypad->write(value);
@@ -100,7 +114,7 @@ void Bus::write(uint16_t address, uint8_t value) {
       cartridge->write(address, value);
     return;
   } else if (address >= ECHO_START && address <= ECHO_END) {
-    write(address - 0x2000, value);
+    writeRaw(address - 0x2000, value);
     return;
   } else if (address >= OAM_START && address <= OAM_END) {
     if (ppu)
@@ -111,11 +125,11 @@ void Bus::write(uint16_t address, uint8_t value) {
       timer->write(address, value);
     return;
   } else if (address == 0xFF46) {
-    // OAM DMA Transfer
-    uint16_t source = static_cast<uint16_t>(value) << 8;
-    for (uint16_t i = 0; i < 0xA0; i++) {
-      write(0xFE00 + i, read(source + i));
-    }
+    // OAM DMA Transfer requested
+    oamDmaActive = true;
+    oamDmaSource = static_cast<uint16_t>(value) << 8;
+    oamDmaCurrentByte = 0;
+    oamDmaClock = 0;
     memory[0xFF46] = value;
     return;
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
@@ -151,7 +165,7 @@ void Bus::write(uint16_t address, uint8_t value) {
       hdmaDest = 0x8000 | ((hdma3 << 8) | hdma4);
       if ((value & 0x80) == 0) {
         for (int i = 0; i < hdmaLength * 0x10; i++) {
-          write(hdmaDest + i, read(hdmaSource + i));
+          writeRaw(hdmaDest + i, readRaw(hdmaSource + i));
         }
         hdmaActive = false;
         hdma5 = 0xFF;
@@ -201,8 +215,29 @@ void Bus::setJoypad(Joypad *j) { joypad = j; }
 void Bus::setSerial(Serial *s) { serial = s; }
 
 void Bus::requestInterrupt(uint8_t interrupt) {
-  uint8_t if_reg = read(0xFF0F);
-  write(0xFF0F, if_reg | interrupt);
+  uint8_t if_reg = readRaw(0xFF0F);
+  writeRaw(0xFF0F, if_reg | interrupt);
+}
+
+void Bus::tick(int tCycles) {
+  if (oamDmaActive) {
+    oamDmaClock += tCycles;
+    while (oamDmaClock >= 4) { // 1 M-cycle = 4 T-cycles
+      oamDmaClock -= 4;
+      if (oamDmaCurrentByte < 160) {
+        // Source is ROM/RAM, Dest is OAM (0xFE00)
+        uint8_t byte = readRaw(oamDmaSource + oamDmaCurrentByte);
+        if (ppu) {
+          ppu->writeOAM(0xFE00 + oamDmaCurrentByte, byte);
+        }
+        oamDmaCurrentByte++;
+      } else {
+        oamDmaActive = false;
+        oamDmaCurrentByte = 0;
+        oamDmaClock = 0;
+      }
+    }
+  }
 }
 
 void Bus::processHDMA() {
@@ -210,7 +245,7 @@ void Bus::processHDMA() {
     return;
 
   for (int i = 0; i < 0x10; i++) {
-    write(hdmaDest++, read(hdmaSource++));
+    writeRaw(hdmaDest++, readRaw(hdmaSource++));
   }
   hdmaLength--;
 
