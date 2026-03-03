@@ -40,6 +40,7 @@ private:
   int scanlineCounter = 456; // T-cycles per scanline
   uint8_t currentScanline = 0;
   uint8_t windowLineCounter = 0;
+  int mode3Duration = 172;
 
   void setMode(Mode mode);
   void updateStatus();

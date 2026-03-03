@@ -36,9 +36,23 @@ void PPU::tick() {
     if (scanlineCounter > 456 - 80) { // Mode 2: OAM Search (80 dots)
       if (getMode() != Mode::OAMSearch) {
         setMode(Mode::OAMSearch);
+        // Game Boy hardware quirk: Mode 3 duration varies with sprite count.
+        // Penalty is roughly 6-10 cycles per sprite.
+        int spritesOnLine = 0;
+        uint8_t spriteHeight = (lcdc & 0x04) ? 16 : 8;
+        for (int i = 0; i < 40; i++) {
+          uint8_t y = oam[i * 4];
+          if (currentScanline + 16 >= y &&
+              currentScanline + 16 < (y + spriteHeight)) {
+            spritesOnLine++;
+            if (spritesOnLine >= 10)
+              break;
+          }
+        }
+        mode3Duration = 172 + (spritesOnLine * 10) + (scx % 8);
       }
     } else if (scanlineCounter >
-               456 - 80 - 172) { // Mode 3: Pixel Transfer (172+ dots)
+               456 - 80 - mode3Duration) { // Mode 3: Pixel Transfer
       if (getMode() != Mode::PixelTransfer) {
         setMode(Mode::PixelTransfer);
       }
