@@ -12,7 +12,48 @@ public:
   void writeReg(uint16_t address, uint8_t value);
 
   void tick(int tCycles);
+  void tickFrameSequencer();
 
 private:
-  std::array<uint8_t, 0x30> registers{}; // 0xFF10 to 0xFF3F
+  int frameSequencerCounter = 0;
+  int frameSequencerStep = 0;
+
+  struct PulseChannel {
+    uint8_t nrX0, nrX1, nrX2, nrX3, nrX4;
+    // Internal state
+    bool enabled = false;
+    float frequency = 0;
+    int timer = 0;
+    int lengthTimer = 0;
+    int dutyStep = 0;
+    int envelopeTimer = 0;
+    int envelopeVolume = 0;
+  };
+
+  struct WaveChannel {
+    uint8_t nr30, nr31, nr32, nr33, nr34;
+    uint8_t waveRAM[16];
+    // Internal state
+    bool enabled = false;
+    int timer = 0;
+    int lengthTimer = 0;
+    int waveStep = 0;
+  };
+
+  struct NoiseChannel {
+    uint8_t nr41, nr42, nr43, nr44;
+    // Internal state
+    bool enabled = false;
+    int timer = 0;
+    int lengthTimer = 0;
+    uint16_t lfsr = 0x7FFF;
+    int envelopeTimer = 0;
+    int envelopeVolume = 0;
+  };
+
+  PulseChannel ch1, ch2;
+  WaveChannel ch3;
+  NoiseChannel ch4;
+
+  uint8_t nr50, nr51, nr52;
 };
