@@ -13,9 +13,10 @@ public:
 
   void tick(int tCycles);
   void tickFrameSequencer();
-  uint16_t calculateSweep();
 
 private:
+  uint16_t calculateSweep();
+
   int frameSequencerCounter = 0;
   int frameSequencerStep = 0;
 
