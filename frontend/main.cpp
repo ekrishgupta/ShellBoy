@@ -1,3 +1,4 @@
+#include "core/APU.h"
 #include "core/Bus.h"
 #include "core/CPU.h"
 #include "core/Joypad.h"
@@ -35,10 +36,12 @@ int main(int argc, char **argv) {
   Timer timer(bus);
   Joypad joypad(bus);
   Serial serial(&bus);
+  APU apu;
   bus.setPPU(&ppu);
   bus.setTimer(&timer);
   bus.setJoypad(&joypad);
   bus.setSerial(&serial);
+  bus.setAPU(&apu);
   BrailleRenderer renderer;
 
   auto screen = ScreenInteractive::TerminalOutput();
@@ -120,6 +123,7 @@ int main(int argc, char **argv) {
         bus.tick(cycles);
         timer.tick(cycles);
         serial.tick(cycles);
+        apu.tick(cycles);
         for (int i = 0; i < cycles; ++i) {
           ppu.tick();
         }
