@@ -19,7 +19,6 @@ private:
   int frameSequencerStep = 0;
 
   struct PulseChannel {
-    uint8_t nrX0, nrX1, nrX2, nrX3, nrX4;
     // Internal state
     bool enabled = false;
     float frequency = 0;
@@ -28,6 +27,10 @@ private:
     int dutyStep = 0;
     int envelopeTimer = 0;
     int envelopeVolume = 0;
+    // Sweep (Only for CH1)
+    int sweepTimer = 0;
+    uint16_t shadowFrequency = 0;
+    bool sweepEnabled = false;
   };
 
   struct WaveChannel {
