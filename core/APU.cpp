@@ -247,6 +247,11 @@ void APU::tick(int tCycles) {
       ch4.lfsr = (ch4.lfsr & ~0x40) | (res << 6);
     }
   }
+  // ch3 (Wave)
+  if (ch3.enabled && --ch3.timer <= 0) {
+    ch3.timer = (2048 - (((ch3.nr34 & 0x07) << 8) | ch3.nr33)) * 2;
+    ch3.waveStep = (ch3.waveStep + 1) & 31;
+  }
 }
 
 void APU::tickFrameSequencer() {
