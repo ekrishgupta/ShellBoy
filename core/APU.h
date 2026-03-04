@@ -13,12 +13,14 @@ public:
 
   void tick(int tCycles);
   void tickFrameSequencer();
+  uint16_t calculateSweep();
 
 private:
   int frameSequencerCounter = 0;
   int frameSequencerStep = 0;
 
   struct PulseChannel {
+    uint8_t nrX0 = 0, nrX1 = 0, nrX2 = 0, nrX3 = 0, nrX4 = 0;
     // Internal state
     bool enabled = false;
     float frequency = 0;
