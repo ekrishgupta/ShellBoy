@@ -115,6 +115,16 @@ void APU::writeReg(uint16_t address, uint8_t value) {
       ch1.enabled = true;
       if (ch1.lengthTimer == 0)
         ch1.lengthTimer = 64;
+
+      // CH1 Sweep Trigger
+      ch1.shadowFrequency = ((ch1.nrX4 & 0x07) << 8) | ch1.nrX3;
+      int sweepPeriod = (ch1.nrX0 >> 4) & 0x07;
+      int sweepShift = ch1.nrX0 & 0x07;
+      ch1.sweepTimer = sweepPeriod == 0 ? 8 : sweepPeriod;
+      ch1.sweepEnabled = (sweepPeriod != 0 || sweepShift != 0);
+      if (sweepShift != 0) {
+        calculateSweep(); // Check for immediate overflow
+      }
     }
     break;
 
@@ -251,5 +261,54 @@ void APU::tickFrameSequencer() {
     }
   }
 
-  // Envelope and Sweep are partially implemented in structural sense
+  if (clockSweep && ch1.sweepEnabled) {
+    if (--ch1.sweepTimer <= 0) {
+      int sweepPeriod = (ch1.nrX0 >> 4) & 0x07;
+      ch1.sweepTimer = sweepPeriod == 0 ? 8 : sweepPeriod;
+
+      if (sweepPeriod != 0) {
+        uint16_t newFreq = calculateSweep();
+        if (newFreq < 2048 && (ch1.nrX0 & 0x07) != 0) {
+          ch1.shadowFrequency = newFreq;
+          ch1.nrX3 = newFreq & 0xFF;
+          ch1.nrX4 = (ch1.nrX4 & 0xF8) | (newFreq >> 8);
+          calculateSweep(); // Check again
+        }
+      }
+    }
+  }
+
+  if (clockEnvelope) {
+    auto tickEnvelope = [](PulseChannel &ch) {
+      if (ch.enabled && (ch.nrX2 & 0x07) != 0) {
+        if (--ch.envelopeTimer <= 0) {
+          ch.envelopeTimer = ch.nrX2 & 0x07;
+          if (ch.nrX2 & 0x08) { // Increase
+            if (ch.envelopeVolume < 15)
+              ch.envelopeVolume++;
+          } else { // Decrease
+            if (ch.envelopeVolume > 0)
+              ch.envelopeVolume--;
+          }
+        }
+      }
+    };
+    tickEnvelope(ch1);
+    tickEnvelope(ch2);
+    // ... ch4 ...
+  }
+}
+
+uint16_t APU::calculateSweep() {
+  uint16_t newFreq = ch1.shadowFrequency >> (ch1.nrX0 & 0x07);
+  if (ch1.nrX0 & 0x08) { // Decrease
+    newFreq = ch1.shadowFrequency - newFreq;
+  } else { // Increase
+    newFreq = ch1.shadowFrequency + newFreq;
+  }
+
+  if (newFreq > 2047) {
+    ch1.enabled = false;
+  }
+  return newFreq;
 }
