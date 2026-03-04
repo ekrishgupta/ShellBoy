@@ -1,4 +1,5 @@
 #include "Bus.h"
+#include "core/APU.h"
 #include "core/Joypad.h"
 #include "core/PPU.h"
 #include "core/Serial.h"
@@ -55,6 +56,9 @@ uint8_t Bus::readRaw(uint16_t address) const {
       return timer->read(address);
   } else if (address == 0xFF46) {
     return memory[0xFF46];
+  } else if (address >= 0xFF10 && address <= 0xFF3F) {
+    if (apu)
+      return apu->readReg(address);
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
     if (ppu)
       return ppu->readReg(address);
@@ -131,6 +135,10 @@ void Bus::writeRaw(uint16_t address, uint8_t value) {
     oamDmaCurrentByte = 0;
     oamDmaClock = 0;
     memory[0xFF46] = value;
+    return;
+  } else if (address >= 0xFF10 && address <= 0xFF3F) {
+    if (apu)
+      apu->writeReg(address, value);
     return;
   } else if (address >= 0xFF40 && address <= 0xFF4B) {
     if (ppu)
@@ -213,6 +221,7 @@ void Bus::setPPU(PPU *pixel_unit) { ppu = pixel_unit; }
 void Bus::setTimer(Timer *t) { timer = t; }
 void Bus::setJoypad(Joypad *j) { joypad = j; }
 void Bus::setSerial(Serial *s) { serial = s; }
+void Bus::setAPU(APU *a) { apu = a; }
 
 void Bus::requestInterrupt(uint8_t interrupt) {
   uint8_t if_reg = readRaw(0xFF0F);

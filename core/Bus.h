@@ -8,6 +8,7 @@ class PPU;
 class Timer;
 class Joypad;
 class Serial;
+class APU;
 
 class Bus {
 public:
@@ -25,6 +26,7 @@ public:
   void setTimer(Timer *t);
   void setJoypad(Joypad *j);
   void setSerial(Serial *s);
+  void setAPU(APU *a);
 
   // Interrupt Bit Constants
   static constexpr uint8_t INTERRUPT_VBLANK = 0x01;
@@ -90,4 +92,5 @@ private:
   Timer *timer = nullptr;
   Joypad *joypad = nullptr;
   Serial *serial = nullptr;
+  APU *apu = nullptr;
 };
