@@ -223,8 +223,30 @@ void APU::tick(int tCycles) {
     tickFrameSequencer();
   }
 
-  // Frequency timers update
-  // ch1.timer, ch2.timer, ch3.timer, ch4.timer would be decreased here
+  // Channel ticking: decrease frequency timers
+  // ch1
+  if (ch1.enabled && --ch1.timer <= 0) {
+    ch1.timer = (2048 - (((ch1.nrX4 & 0x07) << 8) | ch1.nrX3)) * 4;
+    ch1.dutyStep = (ch1.dutyStep + 1) & 7;
+  }
+  // ch2
+  if (ch2.enabled && --ch2.timer <= 0) {
+    ch2.timer = (2048 - (((ch2.nrX4 & 0x07) << 8) | ch2.nrX3)) * 4;
+    ch2.dutyStep = (ch2.dutyStep + 1) & 7;
+  }
+  // ch4 (Noise)
+  if (ch4.enabled && --ch4.timer <= 0) {
+    int divisor = (ch4.nr43 & 0x07);
+    int divisors[] = {8, 16, 32, 48, 64, 80, 96, 112};
+    int shift = (ch4.nr43 >> 4);
+    ch4.timer = divisors[divisor] << shift;
+
+    uint16_t res = (ch4.lfsr & 1) ^ ((ch4.lfsr >> 1) & 1);
+    ch4.lfsr = (ch4.lfsr >> 1) | (res << 14);
+    if (ch4.nr43 & 0x08) { // 7-bit mode
+      ch4.lfsr = (ch4.lfsr & ~0x40) | (res << 6);
+    }
+  }
 }
 
 void APU::tickFrameSequencer() {
