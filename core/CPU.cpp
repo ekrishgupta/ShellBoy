@@ -6,6 +6,10 @@ CPU::CPU(Bus &b) : bus(b) { reset(); }
 
 CPU::~CPU() {}
 
+/**
+ * Serializes the CPU execution state: all registers (AF, BC, DE, HL, SP, PC),
+ * interrupt status (IME, eiDelay), and processor flags (halted, haltBug).
+ */
 void CPU::serialize(std::ostream &out) const {
   out.write(reinterpret_cast<const char *>(&AF.reg16), sizeof(AF.reg16));
   out.write(reinterpret_cast<const char *>(&BC.reg16), sizeof(BC.reg16));
