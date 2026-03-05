@@ -26,6 +26,9 @@ public:
   uint8_t read() const;
   void write(uint8_t value);
 
+  void serialize(std::ostream &out) const;
+  void deserialize(std::istream &in);
+
 private:
   Bus &bus;
   uint8_t buttons = 0xFF; // 1 = Released, 0 = Pressed

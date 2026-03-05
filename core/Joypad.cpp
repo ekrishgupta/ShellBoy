@@ -1,5 +1,6 @@
 #include "Joypad.h"
 #include "Bus.h"
+#include <iostream>
 
 Joypad::Joypad(Bus &b) : bus(b) {}
 
@@ -45,3 +46,13 @@ uint8_t Joypad::read() const {
 }
 
 void Joypad::write(uint8_t value) { select = value & 0x30; }
+
+void Joypad::serialize(std::ostream &out) const {
+  out.write(reinterpret_cast<const char *>(&buttons), sizeof(buttons));
+  out.write(reinterpret_cast<const char *>(&select), sizeof(select));
+}
+
+void Joypad::deserialize(std::istream &in) {
+  in.read(reinterpret_cast<char *>(&buttons), sizeof(buttons));
+  in.read(reinterpret_cast<char *>(&select), sizeof(select));
+}
