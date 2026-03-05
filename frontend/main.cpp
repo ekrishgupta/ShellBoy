@@ -13,6 +13,7 @@
 #include "mmu/Cartridge.h"
 #include <atomic>
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <thread>
 
@@ -57,14 +58,16 @@ int main(int argc, char **argv) {
   auto screen = ScreenInteractive::TerminalOutput();
 
   std::atomic<int> frames = 0;
+  const std::string saveStatePath = "save.sst";
 
   auto renderer_component = Renderer([&] {
     std::string frameText = renderer.render(ppu.frameBuffer);
-    return window(text("ShellBoy - DMG-01 Emulator"),
-                  vbox({text("Frames: " + std::to_string(frames.load())),
-                        text("Controls: Arrows=D-Pad, Z=A, X=B, Enter=Start, "
-                             "Backspace=Select"),
-                        separator(), text(frameText)}));
+    return window(
+        text("ShellBoy - DMG-01 Emulator"),
+        vbox({text("Frames: " + std::to_string(frames.load())),
+              text("Controls: Arrows=D-Pad, Z=A, X=B, Enter=Start, "
+                   "Backspace=Select"),
+              text("State: S=Save, L=Load"), separator(), text(frameText)}));
   });
 
   renderer_component |= CatchEvent([&](Event event) {
@@ -105,7 +108,7 @@ int main(int argc, char **argv) {
       return true;
     }
     if (event == Event::Character("s") || event == Event::Character("S")) {
-      std::ofstream out("save.sst", std::ios::binary);
+      std::ofstream out(saveStatePath, std::ios::binary);
       if (out.is_open()) {
         bus.serialize(out);
         cpu.serialize(out);
@@ -114,12 +117,14 @@ int main(int argc, char **argv) {
         joypad.serialize(out);
         apu.serialize(out);
         cart.serialize(out);
-        std::cout << "State saved to save.sst" << std::endl;
+        std::cout << "State saved to " << saveStatePath << std::endl;
+      } else {
+        std::cerr << "Failed to save state: " << saveStatePath << std::endl;
       }
       return true;
     }
     if (event == Event::Character("l") || event == Event::Character("L")) {
-      std::ifstream in("save.sst", std::ios::binary);
+      std::ifstream in(saveStatePath, std::ios::binary);
       if (in.is_open()) {
         bus.deserialize(in);
         cpu.deserialize(in);
@@ -128,7 +133,9 @@ int main(int argc, char **argv) {
         joypad.deserialize(in);
         apu.deserialize(in);
         cart.deserialize(in);
-        std::cout << "State loaded from save.sst" << std::endl;
+        std::cout << "State loaded from " << saveStatePath << std::endl;
+      } else {
+        std::cerr << "Failed to load state: " << saveStatePath << std::endl;
       }
       return true;
     }
