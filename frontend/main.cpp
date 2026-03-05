@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
   auto screen = ScreenInteractive::TerminalOutput();
 
   std::atomic<int> frames = 0;
-  const std::string saveStatePath = "save.sst";
+  std::string saveStatePath = title + ".sst";
 
   auto renderer_component = Renderer([&] {
     std::string frameText = renderer.render(ppu.frameBuffer);
