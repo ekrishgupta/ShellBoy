@@ -96,6 +96,14 @@ int CPU::tick() {
   if (bus.read(0xFF4D) & 0x80) {
     cycles /= 2;
   }
+
+  if (eiDelay > 0) {
+    eiDelay--;
+    if (eiDelay == 0) {
+      IME = true;
+    }
+  }
+
   return cycles;
 }
 
@@ -322,16 +330,12 @@ int CPU::execute(uint8_t opcode) {
     BC.reg16++;
     return 8;
 
-  case 0x08: // LD (nn), SP
-    bus.write(fetch16(), SP & 0xFF);
-    bus.write(PC - 1 + 1, SP >> 8); // Wait, fetch16 already advanced PC by 2.
-    // Let's rewrite this correctly:
-    {
-      uint16_t addr = fetch16();
-      bus.write(addr, SP & 0xFF);
-      bus.write(addr + 1, SP >> 8);
-      return 20;
-    }
+  case 0x08: { // LD (nn), SP
+    uint16_t addr = fetch16();
+    bus.write(addr, SP & 0xFF);
+    bus.write(addr + 1, SP >> 8);
+    return 20;
+  }
   case 0x09: { // ADD HL, BC
     uint32_t res = HL.reg16 + BC.reg16;
     setFlag(FLAG_N, false);
@@ -1446,9 +1450,10 @@ int CPU::execute(uint8_t opcode) {
 
   case 0xF3: // DI
     IME = false;
+    eiDelay = 0;
     return 4;
   case 0xFB: // EI
-    IME = true;
+    eiDelay = 2;
     return 4;
   case 0xC7:
     pushStack(PC);

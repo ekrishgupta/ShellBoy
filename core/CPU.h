@@ -44,6 +44,7 @@ public:
   uint16_t PC;
 
   bool IME; // Interrupt Master Enable
+  uint8_t eiDelay = 0;
 
   int handleInterrupts();
 
