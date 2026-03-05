@@ -18,6 +18,9 @@ public:
 
   void tick(uint32_t cycles);
 
+  void serialize(std::ostream &out) const;
+  void deserialize(std::istream &in);
+
 private:
   void initNetwork();
   void listenThread();

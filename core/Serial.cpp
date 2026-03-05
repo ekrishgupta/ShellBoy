@@ -199,3 +199,18 @@ void Serial::connectThread() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
+void Serial::serialize(std::ostream &out) const {
+  out.write(reinterpret_cast<const char *>(&sb), sizeof(sb));
+  out.write(reinterpret_cast<const char *>(&sc), sizeof(sc));
+  out.write(reinterpret_cast<const char *>(&transferring),
+            sizeof(transferring));
+  out.write(reinterpret_cast<const char *>(&transfer_cycles),
+            sizeof(transfer_cycles));
+}
+
+void Serial::deserialize(std::istream &in) {
+  in.read(reinterpret_cast<char *>(&sb), sizeof(sb));
+  in.read(reinterpret_cast<char *>(&sc), sizeof(sc));
+  in.read(reinterpret_cast<char *>(&transferring), sizeof(transferring));
+  in.read(reinterpret_cast<char *>(&transfer_cycles), sizeof(transfer_cycles));
+}
