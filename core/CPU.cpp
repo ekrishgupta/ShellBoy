@@ -6,6 +6,32 @@ CPU::CPU(Bus &b) : bus(b) { reset(); }
 
 CPU::~CPU() {}
 
+void CPU::serialize(std::ostream &out) const {
+  out.write(reinterpret_cast<const char *>(&AF.reg16), sizeof(AF.reg16));
+  out.write(reinterpret_cast<const char *>(&BC.reg16), sizeof(BC.reg16));
+  out.write(reinterpret_cast<const char *>(&DE.reg16), sizeof(DE.reg16));
+  out.write(reinterpret_cast<const char *>(&HL.reg16), sizeof(HL.reg16));
+  out.write(reinterpret_cast<const char *>(&SP), sizeof(SP));
+  out.write(reinterpret_cast<const char *>(&PC), sizeof(PC));
+  out.write(reinterpret_cast<const char *>(&IME), sizeof(IME));
+  out.write(reinterpret_cast<const char *>(&halted), sizeof(halted));
+  out.write(reinterpret_cast<const char *>(&haltBug), sizeof(haltBug));
+  out.write(reinterpret_cast<const char *>(&eiDelay), sizeof(eiDelay));
+}
+
+void CPU::deserialize(std::istream &in) {
+  in.read(reinterpret_cast<char *>(&AF.reg16), sizeof(AF.reg16));
+  in.read(reinterpret_cast<char *>(&BC.reg16), sizeof(BC.reg16));
+  in.read(reinterpret_cast<char *>(&DE.reg16), sizeof(DE.reg16));
+  in.read(reinterpret_cast<char *>(&HL.reg16), sizeof(HL.reg16));
+  in.read(reinterpret_cast<char *>(&SP), sizeof(SP));
+  in.read(reinterpret_cast<char *>(&PC), sizeof(PC));
+  in.read(reinterpret_cast<char *>(&IME), sizeof(IME));
+  in.read(reinterpret_cast<char *>(&halted), sizeof(halted));
+  in.read(reinterpret_cast<char *>(&haltBug), sizeof(haltBug));
+  in.read(reinterpret_cast<char *>(&eiDelay), sizeof(eiDelay));
+}
+
 void CPU::reset() {
   // Standard initialization values for DMG-01
   AF.hi = 0x01;

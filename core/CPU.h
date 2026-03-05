@@ -48,6 +48,9 @@ public:
 
   int handleInterrupts();
 
+  void serialize(std::ostream &out) const;
+  void deserialize(std::istream &in);
+
 private:
   Bus &bus;
   bool halted = false;
