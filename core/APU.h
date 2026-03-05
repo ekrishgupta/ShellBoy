@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <iostream>
 
 // Forward-declare so APU.h doesn't drag in the full AudioBackend header
 // in every translation unit.
