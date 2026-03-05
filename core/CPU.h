@@ -2,6 +2,7 @@
 
 #include "Bus.h"
 #include <cstdint>
+#include <iostream>
 
 // The Game Boy CPU (LR35902) uses 8-bit registers that can be combined
 // into 16-bit registers (AF, BC, DE, HL). It is little-endian.
