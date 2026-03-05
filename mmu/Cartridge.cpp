@@ -185,7 +185,10 @@ void Cartridge::write(uint16_t address, uint8_t value) {
         rtcRegisters[ramBank - 0x08] = value;
         return;
       }
-      uint32_t mapped = (ramBank * 0x2000) + (address - 0xA000);
+      uint32_t offset = address - 0xA000;
+      if (mbcType == 2)
+        offset %= 512;
+      uint32_t mapped = (ramBank * 0x2000) + offset;
       if (mapped < ram.size()) {
         ram[mapped] = value;
       }
