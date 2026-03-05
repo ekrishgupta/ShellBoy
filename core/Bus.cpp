@@ -278,6 +278,11 @@ void Bus::loadBootRom(const std::string &filepath) {
   }
 }
 
+// ── State Serialization ──────────────────────────────────────────────────────
+/**
+ * Serializes the current Bus state including WRAM banks, DMA status,
+ * and memory mappings into a binary stream.
+ */
 void Bus::serialize(std::ostream &out) const {
   out.write(reinterpret_cast<const char *>(memory.data()), memory.size());
   out.write(reinterpret_cast<const char *>(wram.data()), wram.size());
