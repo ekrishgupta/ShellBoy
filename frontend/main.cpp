@@ -21,16 +21,36 @@ using namespace ftxui;
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    std::cerr << "Usage: ShellBoy <rom_path>" << std::endl;
+    std::cerr << "Usage: ShellBoy <rom_path> [--bootrom <bootrom_path>]"
+              << std::endl;
     return 1;
+  }
+  std::string romPath = "";
+  std::string bootRomPath = "";
+
+  for (int i = 1; i < argc; i++) {
+    std::string arg = argv[i];
+    if (arg == "--bootrom" && i + 1 < argc) {
+      bootRomPath = argv[i + 1];
+      i++;
+    } else {
+      romPath = arg;
+    }
   }
 
   Bus bus;
   Cartridge cart;
-  if (!cart.loadRom(argv[1])) {
-    std::cerr << "Failed to load ROM: " << argv[1] << std::endl;
+  if (!cart.loadRom(romPath)) {
+    std::cerr << "Failed to load ROM: " << romPath << std::endl;
     return 1;
   }
+
+  if (!bootRomPath.empty()) {
+    bus.loadBootRom(bootRomPath);
+  }
+
+  std::string title = cart.getRomTitle();
+  std::cout << "Starting ShellBoy: " << title << std::endl;
 
   bus.setCartridge(&cart);
 
