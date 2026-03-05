@@ -3,6 +3,7 @@
 #include "Bus.h"
 #include <array>
 #include <cstdint>
+#include <iostream>
 #include <vector>
 
 class PPU {
