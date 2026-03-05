@@ -10,6 +10,7 @@ public:
   ~Cartridge();
 
   bool loadRom(const std::string &filepath);
+  std::string getRomTitle() const;
 
   // Abstracted away Memory Bank Controller logic
   uint8_t read(uint16_t address) const;

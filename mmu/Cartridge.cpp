@@ -71,6 +71,18 @@ bool Cartridge::loadRom(const std::string &filepath) {
   return false;
 }
 
+std::string Cartridge::getRomTitle() const {
+  if (rom.size() < 0x0150)
+    return "Unknown";
+  std::string title;
+  for (int i = 0x0134; i <= 0x0143; i++) {
+    if (rom[i] == 0)
+      break;
+    title += static_cast<char>(rom[i]);
+  }
+  return title;
+}
+
 uint8_t Cartridge::read(uint16_t address) const {
   if (address < 0x4000) {
     return rom[address];
