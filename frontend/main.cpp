@@ -104,6 +104,34 @@ int main(int argc, char **argv) {
       screen.Exit();
       return true;
     }
+    if (event == Event::Character("s") || event == Event::Character("S")) {
+      std::ofstream out("save.sst", std::ios::binary);
+      if (out.is_open()) {
+        bus.serialize(out);
+        cpu.serialize(out);
+        ppu.serialize(out);
+        timer.serialize(out);
+        joypad.serialize(out);
+        apu.serialize(out);
+        cart.serialize(out);
+        std::cout << "State saved to save.sst" << std::endl;
+      }
+      return true;
+    }
+    if (event == Event::Character("l") || event == Event::Character("L")) {
+      std::ifstream in("save.sst", std::ios::binary);
+      if (in.is_open()) {
+        bus.deserialize(in);
+        cpu.deserialize(in);
+        ppu.deserialize(in);
+        timer.deserialize(in);
+        joypad.deserialize(in);
+        apu.deserialize(in);
+        cart.deserialize(in);
+        std::cout << "State loaded from save.sst" << std::endl;
+      }
+      return true;
+    }
     return false;
   });
 
