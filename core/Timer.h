@@ -18,4 +18,6 @@ private:
   uint8_t tima = 0;          // TIMA register (0xFF05)
   uint8_t tma = 0;           // TMA register (0xFF06)
   uint8_t tac = 0;           // TAC register (0xFF07)
+
+  bool last_timer_bit = false;
 };

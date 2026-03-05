@@ -4,24 +4,23 @@
 Timer::Timer(Bus &b) : bus(b) {}
 
 void Timer::tick(int cycles) {
-  uint16_t prev_div = div_internal;
-  div_internal += cycles;
+  while (cycles > 0) {
+    div_internal++;
+    cycles--;
 
-  static const int bit_map[] = {9, 3, 5, 7};
-  int bit = bit_map[tac & 0x03];
-  bool timer_enabled = (tac & 0x04) != 0;
+    static const int bit_map[] = {9, 3, 5, 7};
+    int bit = bit_map[tac & 0x03];
+    bool timer_enabled = (tac & 0x04) != 0;
+    bool current_bit = timer_enabled && ((div_internal >> bit) & 0x01);
 
-  if (timer_enabled) {
-    bool prev_bit = (prev_div >> bit) & 0x01;
-    bool current_bit = (div_internal >> bit) & 0x01;
-
-    if (prev_bit && !current_bit) {
+    if (last_timer_bit && !current_bit) {
       tima++;
       if (tima == 0) {
         tima = tma;
         bus.requestInterrupt(Bus::INTERRUPT_TIMER);
       }
     }
+    last_timer_bit = current_bit;
   }
 }
 
@@ -55,4 +54,18 @@ void Timer::write(uint16_t address, uint8_t value) {
     tac = value;
     break;
   }
+
+  static const int bit_map[] = {9, 3, 5, 7};
+  int bit = bit_map[tac & 0x03];
+  bool timer_enabled = (tac & 0x04) != 0;
+  bool current_bit = timer_enabled && ((div_internal >> bit) & 0x01);
+
+  if (last_timer_bit && !current_bit) {
+    tima++;
+    if (tima == 0) {
+      tima = tma;
+      bus.requestInterrupt(Bus::INTERRUPT_TIMER);
+    }
+  }
+  last_timer_bit = current_bit;
 }
