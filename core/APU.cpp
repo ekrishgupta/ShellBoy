@@ -26,6 +26,38 @@ APU::APU() {
 
 APU::~APU() {}
 
+void APU::serialize(std::ostream &out) const {
+  out.write(reinterpret_cast<const char *>(&frameSequencerCounter),
+            sizeof(frameSequencerCounter));
+  out.write(reinterpret_cast<const char *>(&frameSequencerStep),
+            sizeof(frameSequencerStep));
+  out.write(reinterpret_cast<const char *>(&ch1), sizeof(ch1));
+  out.write(reinterpret_cast<const char *>(&ch2), sizeof(ch2));
+  out.write(reinterpret_cast<const char *>(&ch3), sizeof(ch3));
+  out.write(reinterpret_cast<const char *>(&ch4), sizeof(ch4));
+  out.write(reinterpret_cast<const char *>(&nr50), sizeof(nr50));
+  out.write(reinterpret_cast<const char *>(&nr51), sizeof(nr51));
+  out.write(reinterpret_cast<const char *>(&nr52), sizeof(nr52));
+  out.write(reinterpret_cast<const char *>(&sampleAccumulator),
+            sizeof(sampleAccumulator));
+}
+
+void APU::deserialize(std::istream &in) {
+  in.read(reinterpret_cast<char *>(&frameSequencerCounter),
+          sizeof(frameSequencerCounter));
+  in.read(reinterpret_cast<char *>(&frameSequencerStep),
+          sizeof(frameSequencerStep));
+  in.read(reinterpret_cast<char *>(&ch1), sizeof(ch1));
+  in.read(reinterpret_cast<char *>(&ch2), sizeof(ch2));
+  in.read(reinterpret_cast<char *>(&ch3), sizeof(ch3));
+  in.read(reinterpret_cast<char *>(&ch4), sizeof(ch4));
+  in.read(reinterpret_cast<char *>(&nr50), sizeof(nr50));
+  in.read(reinterpret_cast<char *>(&nr51), sizeof(nr51));
+  in.read(reinterpret_cast<char *>(&nr52), sizeof(nr52));
+  in.read(reinterpret_cast<char *>(&sampleAccumulator),
+          sizeof(sampleAccumulator));
+}
+
 void APU::setAudioBackend(AudioBackend *backend) { audioBackend = backend; }
 
 // ---------------------------------------------------------------------------
