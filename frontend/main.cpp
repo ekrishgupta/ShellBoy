@@ -1,4 +1,5 @@
 #include "core/APU.h"
+#include "core/AudioBackend.h"
 #include "core/Bus.h"
 #include "core/CPU.h"
 #include "core/Joypad.h"
@@ -22,6 +23,7 @@ int main(int argc, char **argv) {
     std::cerr << "Usage: ShellBoy <rom_path>" << std::endl;
     return 1;
   }
+
   Bus bus;
   Cartridge cart;
   if (!cart.loadRom(argv[1])) {
@@ -37,16 +39,25 @@ int main(int argc, char **argv) {
   Joypad joypad(bus);
   Serial serial(&bus);
   APU apu;
+
+  // ── Audio backend ──────────────────────────────────────────────────────────
+  AudioBackend audioBackend;
+  if (!audioBackend.init()) {
+    std::cerr << "[Warning] Audio initialisation failed – running silently.\n";
+  }
+  apu.setAudioBackend(&audioBackend);
+
   bus.setPPU(&ppu);
   bus.setTimer(&timer);
   bus.setJoypad(&joypad);
   bus.setSerial(&serial);
   bus.setAPU(&apu);
-  BrailleRenderer renderer;
 
+  BrailleRenderer renderer;
   auto screen = ScreenInteractive::TerminalOutput();
 
   std::atomic<int> frames = 0;
+
   auto renderer_component = Renderer([&] {
     std::string frameText = renderer.render(ppu.frameBuffer);
     return window(text("ShellBoy - DMG-01 Emulator"),
@@ -97,7 +108,8 @@ int main(int argc, char **argv) {
   });
 
   std::atomic<bool> running = true;
-  // The Master Clock Loop
+
+  // ── Master clock loop ──────────────────────────────────────────────────────
   std::thread emulatorThread([&]() {
     const double targetFPS = 60.7;
     const auto frameDuration = std::chrono::duration<double>(1.0 / targetFPS);
@@ -105,7 +117,7 @@ int main(int argc, char **argv) {
     while (running) {
       auto frameStart = std::chrono::high_resolution_clock::now();
 
-      // Clear joypad state at start of frame (simulate release for TUI)
+      // Release all buttons (TUI only keeps press for one frame)
       joypad.releaseButton(Joypad::UP);
       joypad.releaseButton(Joypad::DOWN);
       joypad.releaseButton(Joypad::LEFT);
@@ -115,42 +127,36 @@ int main(int argc, char **argv) {
       joypad.releaseButton(Joypad::SELECT);
       joypad.releaseButton(Joypad::START);
 
-      // Run CPU and PPU until a frame is ready
-      // A full frame is 70224 T-cycles
+      // Run until one full frame (70224 T-cycles) is generated.
       int cyclesThisFrame = 0;
       while (cyclesThisFrame < 70224) {
-        int cycles = cpu.tick(); // CPU is currently a stub NOP taking 4 cycles
+        int cycles = cpu.tick();
         bus.tick(cycles);
         timer.tick(cycles);
         serial.tick(cycles);
-        apu.tick(cycles);
-        for (int i = 0; i < cycles; ++i) {
+        apu.tick(cycles); // ← APU now produces samples
+        for (int i = 0; i < cycles; ++i)
           ppu.tick();
-        }
         cyclesThisFrame += cycles;
       }
 
       ppu.frameReady = false;
       frames++;
 
-      // Trigger a UI re-render on the main thread safely
       screen.PostEvent(Event::Custom);
 
-      // Sleep to maintain 60.7 Hz limit
       auto frameEnd = std::chrono::high_resolution_clock::now();
       auto elapsed = frameEnd - frameStart;
-      if (elapsed < frameDuration) {
+      if (elapsed < frameDuration)
         std::this_thread::sleep_for(frameDuration - elapsed);
-      }
     }
   });
 
-  // Start FTXUI event loop (this blocks until the UI exits)
   screen.Loop(renderer_component);
 
-  // Stop emulator thread gracefully
   running = false;
   emulatorThread.join();
 
+  // AudioBackend destructor handles shutdown.
   return 0;
 }
