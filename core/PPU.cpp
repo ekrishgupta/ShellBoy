@@ -396,3 +396,60 @@ void PPU::writeReg(uint16_t address, uint8_t value) {
     break;
   }
 }
+
+void PPU::serialize(std::ostream &out) const {
+  out.write(reinterpret_cast<const char *>(vram.data()), vram.size());
+  out.write(reinterpret_cast<const char *>(oam.data()), oam.size());
+  out.write(reinterpret_cast<const char *>(&vramBank), sizeof(vramBank));
+  out.write(reinterpret_cast<const char *>(&lcdc), sizeof(lcdc));
+  out.write(reinterpret_cast<const char *>(&stat), sizeof(stat));
+  out.write(reinterpret_cast<const char *>(&scy), sizeof(scy));
+  out.write(reinterpret_cast<const char *>(&scx), sizeof(scx));
+  out.write(reinterpret_cast<const char *>(&lyc), sizeof(lyc));
+  out.write(reinterpret_cast<const char *>(&bgp), sizeof(bgp));
+  out.write(reinterpret_cast<const char *>(&obp0), sizeof(obp0));
+  out.write(reinterpret_cast<const char *>(&obp1), sizeof(obp1));
+  out.write(reinterpret_cast<const char *>(&wy), sizeof(wy));
+  out.write(reinterpret_cast<const char *>(&wx), sizeof(wx));
+  out.write(reinterpret_cast<const char *>(bgPalettes.data()),
+            bgPalettes.size());
+  out.write(reinterpret_cast<const char *>(objPalettes.data()),
+            objPalettes.size());
+  out.write(reinterpret_cast<const char *>(&bgPaletteIndex),
+            sizeof(bgPaletteIndex));
+  out.write(reinterpret_cast<const char *>(&objPaletteIndex),
+            sizeof(objPaletteIndex));
+  out.write(reinterpret_cast<const char *>(&scanlineCounter),
+            sizeof(scanlineCounter));
+  out.write(reinterpret_cast<const char *>(&currentScanline),
+            sizeof(currentScanline));
+  out.write(reinterpret_cast<const char *>(&windowLineCounter),
+            sizeof(windowLineCounter));
+  out.write(reinterpret_cast<const char *>(&mode3Duration),
+            sizeof(mode3Duration));
+}
+
+void PPU::deserialize(std::istream &in) {
+  in.read(reinterpret_cast<char *>(vram.data()), vram.size());
+  in.read(reinterpret_cast<char *>(oam.data()), oam.size());
+  in.read(reinterpret_cast<char *>(&vramBank), sizeof(vramBank));
+  in.read(reinterpret_cast<char *>(&lcdc), sizeof(lcdc));
+  in.read(reinterpret_cast<char *>(&stat), sizeof(stat));
+  in.read(reinterpret_cast<char *>(&scy), sizeof(scy));
+  in.read(reinterpret_cast<char *>(&scx), sizeof(scx));
+  in.read(reinterpret_cast<char *>(&lyc), sizeof(lyc));
+  in.read(reinterpret_cast<char *>(&bgp), sizeof(bgp));
+  in.read(reinterpret_cast<char *>(&obp0), sizeof(obp0));
+  in.read(reinterpret_cast<char *>(&obp1), sizeof(obp1));
+  in.read(reinterpret_cast<char *>(&wy), sizeof(wy));
+  in.read(reinterpret_cast<char *>(&wx), sizeof(wx));
+  in.read(reinterpret_cast<char *>(bgPalettes.data()), bgPalettes.size());
+  in.read(reinterpret_cast<char *>(objPalettes.data()), objPalettes.size());
+  in.read(reinterpret_cast<char *>(&bgPaletteIndex), sizeof(bgPaletteIndex));
+  in.read(reinterpret_cast<char *>(&objPaletteIndex), sizeof(objPaletteIndex));
+  in.read(reinterpret_cast<char *>(&scanlineCounter), sizeof(scanlineCounter));
+  in.read(reinterpret_cast<char *>(&currentScanline), sizeof(currentScanline));
+  in.read(reinterpret_cast<char *>(&windowLineCounter),
+          sizeof(windowLineCounter));
+  in.read(reinterpret_cast<char *>(&mode3Duration), sizeof(mode3Duration));
+}
