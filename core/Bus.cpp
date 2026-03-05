@@ -5,11 +5,9 @@
 #include "core/Serial.h"
 #include "core/Timer.h"
 #include "mmu/Cartridge.h"
+#include <fstream>
 
-Bus::Bus() {
-  // Initialize memory to 0
-  memory.fill(0);
-}
+Bus::Bus() { memory.fill(0); }
 
 Bus::~Bus() {}
 
@@ -35,6 +33,15 @@ uint8_t Bus::readRaw(uint16_t address) const {
     if (serial)
       return serial->read(address);
   } else if (address >= ROM0_START && address <= ROM0_END) {
+    if (bootRomEnabled) {
+      if (cgbBootRom && address < 0x0900) {
+        if (address < 0x0100 || (address >= 0x0200)) {
+          return bootRom[address];
+        }
+      } else if (address < 0x0100) {
+        return bootRom[address];
+      }
+    }
     if (cartridge)
       return cartridge->read(address);
   } else if (address >= ROMX_START && address <= ROMX_END) {
@@ -129,7 +136,6 @@ void Bus::writeRaw(uint16_t address, uint8_t value) {
       timer->write(address, value);
     return;
   } else if (address == 0xFF46) {
-    // OAM DMA Transfer requested
     oamDmaActive = true;
     oamDmaSource = static_cast<uint16_t>(value) << 8;
     oamDmaCurrentByte = 0;
@@ -194,6 +200,10 @@ void Bus::writeRaw(uint16_t address, uint8_t value) {
       wram[(wramBank * 0x1000) + (address - 0xD000)] = value;
     }
     return;
+  } else if (address == 0xFF50) {
+    if (value)
+      bootRomEnabled = false;
+    return;
   } else if (address == 0xFF70) {
     wramBank = value & 0x07;
     if (wramBank == 0)
@@ -215,9 +225,7 @@ void Bus::write16(uint16_t address, uint16_t value) {
 }
 
 void Bus::setCartridge(Cartridge *cart) { cartridge = cart; }
-
 void Bus::setPPU(PPU *pixel_unit) { ppu = pixel_unit; }
-
 void Bus::setTimer(Timer *t) { timer = t; }
 void Bus::setJoypad(Joypad *j) { joypad = j; }
 void Bus::setSerial(Serial *s) { serial = s; }
@@ -231,14 +239,12 @@ void Bus::requestInterrupt(uint8_t interrupt) {
 void Bus::tick(int tCycles) {
   if (oamDmaActive) {
     oamDmaClock += tCycles;
-    while (oamDmaClock >= 4) { // 1 M-cycle = 4 T-cycles
+    while (oamDmaClock >= 4) {
       oamDmaClock -= 4;
       if (oamDmaCurrentByte < 160) {
-        // Source is ROM/RAM, Dest is OAM (0xFE00)
         uint8_t byte = readRaw(oamDmaSource + oamDmaCurrentByte);
-        if (ppu) {
+        if (ppu)
           ppu->writeOAM(0xFE00 + oamDmaCurrentByte, byte);
-        }
         oamDmaCurrentByte++;
       } else {
         oamDmaActive = false;
@@ -252,14 +258,71 @@ void Bus::tick(int tCycles) {
 void Bus::processHDMA() {
   if (!hdmaActive)
     return;
-
   for (int i = 0; i < 0x10; i++) {
     writeRaw(hdmaDest++, readRaw(hdmaSource++));
   }
   hdmaLength--;
-
   if (hdmaLength == 0) {
     hdmaActive = false;
     hdma5 = 0xFF;
   }
+}
+
+void Bus::loadBootRom(const std::string &filepath) {
+  std::ifstream file(filepath, std::ios::binary);
+  if (file.is_open()) {
+    file.read(reinterpret_cast<char *>(bootRom.data()),
+              std::min((size_t)0x900, bootRom.size()));
+    bootRomEnabled = true;
+    cgbBootRom = (bootRom.size() > 256); // Simple heuristic
+  }
+}
+
+void Bus::serialize(std::ostream &out) const {
+  out.write(reinterpret_cast<const char *>(memory.data()), memory.size());
+  out.write(reinterpret_cast<const char *>(wram.data()), wram.size());
+  out.write(reinterpret_cast<const char *>(&wramBank), sizeof(wramBank));
+  out.write(reinterpret_cast<const char *>(&key1), sizeof(key1));
+  out.write(reinterpret_cast<const char *>(&hdma1), sizeof(hdma1));
+  out.write(reinterpret_cast<const char *>(&hdma2), sizeof(hdma2));
+  out.write(reinterpret_cast<const char *>(&hdma3), sizeof(hdma3));
+  out.write(reinterpret_cast<const char *>(&hdma4), sizeof(hdma4));
+  out.write(reinterpret_cast<const char *>(&hdma5), sizeof(hdma5));
+  out.write(reinterpret_cast<const char *>(&hdmaActive), sizeof(hdmaActive));
+  out.write(reinterpret_cast<const char *>(&hdmaSource), sizeof(hdmaSource));
+  out.write(reinterpret_cast<const char *>(&hdmaDest), sizeof(hdmaDest));
+  out.write(reinterpret_cast<const char *>(&hdmaLength), sizeof(hdmaLength));
+  out.write(reinterpret_cast<const char *>(&oamDmaActive),
+            sizeof(oamDmaActive));
+  out.write(reinterpret_cast<const char *>(&oamDmaSource),
+            sizeof(oamDmaSource));
+  out.write(reinterpret_cast<const char *>(&oamDmaCurrentByte),
+            sizeof(oamDmaCurrentByte));
+  out.write(reinterpret_cast<const char *>(&oamDmaClock), sizeof(oamDmaClock));
+  out.write(reinterpret_cast<const char *>(&bootRomEnabled),
+            sizeof(bootRomEnabled));
+  out.write(reinterpret_cast<const char *>(&cgbBootRom), sizeof(cgbBootRom));
+}
+
+void Bus::deserialize(std::istream &in) {
+  in.read(reinterpret_cast<char *>(memory.data()), memory.size());
+  in.read(reinterpret_cast<char *>(wram.data()), wram.size());
+  in.read(reinterpret_cast<char *>(&wramBank), sizeof(wramBank));
+  in.read(reinterpret_cast<char *>(&key1), sizeof(key1));
+  in.read(reinterpret_cast<char *>(&hdma1), sizeof(hdma1));
+  in.read(reinterpret_cast<char *>(&hdma2), sizeof(hdma2));
+  in.read(reinterpret_cast<char *>(&hdma3), sizeof(hdma3));
+  in.read(reinterpret_cast<char *>(&hdma4), sizeof(hdma4));
+  in.read(reinterpret_cast<char *>(&hdma5), sizeof(hdma5));
+  in.read(reinterpret_cast<char *>(&hdmaActive), sizeof(hdmaActive));
+  in.read(reinterpret_cast<char *>(&hdmaSource), sizeof(hdmaSource));
+  in.read(reinterpret_cast<char *>(&hdmaDest), sizeof(hdmaDest));
+  in.read(reinterpret_cast<char *>(&hdmaLength), sizeof(hdmaLength));
+  in.read(reinterpret_cast<char *>(&oamDmaActive), sizeof(oamDmaActive));
+  in.read(reinterpret_cast<char *>(&oamDmaSource), sizeof(oamDmaSource));
+  in.read(reinterpret_cast<char *>(&oamDmaCurrentByte),
+          sizeof(oamDmaCurrentByte));
+  in.read(reinterpret_cast<char *>(&oamDmaClock), sizeof(oamDmaClock));
+  in.read(reinterpret_cast<char *>(&bootRomEnabled), sizeof(bootRomEnabled));
+  in.read(reinterpret_cast<char *>(&cgbBootRom), sizeof(cgbBootRom));
 }

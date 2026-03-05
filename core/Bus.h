@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cstdint>
+#include <iostream>
+#include <string>
 
 class Cartridge;
 class PPU;
@@ -27,6 +29,11 @@ public:
   void setJoypad(Joypad *j);
   void setSerial(Serial *s);
   void setAPU(APU *a);
+
+  void loadBootRom(const std::string &filepath);
+
+  void serialize(std::ostream &out) const;
+  void deserialize(std::istream &in);
 
   // Interrupt Bit Constants
   static constexpr uint8_t INTERRUPT_VBLANK = 0x01;
@@ -86,6 +93,10 @@ private:
   uint16_t oamDmaSource = 0;
   uint8_t oamDmaCurrentByte = 0;
   uint16_t oamDmaClock = 0;
+
+  std::array<uint8_t, 0x900> bootRom{};
+  bool bootRomEnabled = false;
+  bool cgbBootRom = false;
 
   Cartridge *cartridge = nullptr;
   PPU *ppu = nullptr;
