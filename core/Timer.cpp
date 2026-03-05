@@ -69,3 +69,21 @@ void Timer::write(uint16_t address, uint8_t value) {
   }
   last_timer_bit = current_bit;
 }
+
+void Timer::serialize(std::ostream &out) const {
+  out.write(reinterpret_cast<const char *>(&div_internal),
+            sizeof(div_internal));
+  out.write(reinterpret_cast<const char *>(&tima), sizeof(tima));
+  out.write(reinterpret_cast<const char *>(&tma), sizeof(tma));
+  out.write(reinterpret_cast<const char *>(&tac), sizeof(tac));
+  out.write(reinterpret_cast<const char *>(&last_timer_bit),
+            sizeof(last_timer_bit));
+}
+
+void Timer::deserialize(std::istream &in) {
+  in.read(reinterpret_cast<char *>(&div_internal), sizeof(div_internal));
+  in.read(reinterpret_cast<char *>(&tima), sizeof(tima));
+  in.read(reinterpret_cast<char *>(&tma), sizeof(tma));
+  in.read(reinterpret_cast<char *>(&tac), sizeof(tac));
+  in.read(reinterpret_cast<char *>(&last_timer_bit), sizeof(last_timer_bit));
+}
