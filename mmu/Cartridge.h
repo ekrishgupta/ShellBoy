@@ -22,6 +22,9 @@ public:
   void saveRtc();
   void loadRtc();
 
+  void serialize(std::ostream &out) const;
+  void deserialize(std::istream &in);
+
 private:
   std::vector<uint8_t> rom;
   std::vector<uint8_t> ram;

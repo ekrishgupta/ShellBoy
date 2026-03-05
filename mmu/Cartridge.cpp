@@ -24,6 +24,8 @@ bool Cartridge::loadRom(const std::string &filepath) {
 
     if (type >= 0x01 && type <= 0x03)
       mbcType = 1; // MBC1
+    else if (type == 0x05 || type == 0x06)
+      mbcType = 2; // MBC2
     else if (type >= 0x0F && type <= 0x13)
       mbcType = 3; // MBC3
     else if (type >= 0x19 && type <= 0x1E)
@@ -38,25 +40,29 @@ bool Cartridge::loadRom(const std::string &filepath) {
       savePath = filepath + ".sav";
     }
 
-    switch (rom[0x149]) {
-    case 1:
-      ram.resize(2048);
-      break;
-    case 2:
-      ram.resize(8192);
-      break;
-    case 3:
-      ram.resize(32768);
-      break;
-    case 4:
-      ram.resize(131072);
-      break;
-    case 5:
-      ram.resize(65536);
-      break;
-    default:
-      ram.resize(0);
-      break;
+    if (mbcType == 2) {
+      ram.resize(512);
+    } else {
+      switch (rom[0x149]) {
+      case 1:
+        ram.resize(2048);
+        break;
+      case 2:
+        ram.resize(8192);
+        break;
+      case 3:
+        ram.resize(32768);
+        break;
+      case 4:
+        ram.resize(131072);
+        break;
+      case 5:
+        ram.resize(65536);
+        break;
+      default:
+        ram.resize(0);
+        break;
+      }
     }
     loadBattery();
     loadRtc();
@@ -77,6 +83,9 @@ uint8_t Cartridge::read(uint16_t address) const {
     return rom[mapped % rom.size()];
   } else if (address >= 0xA000 && address <= 0xBFFF) {
     if (ramEnabled) {
+      if (mbcType == 2) {
+        return ram[(address - 0xA000) % 512] | 0xF0;
+      }
       if (mbcType == 3 && ramBank >= 0x08 && ramBank <= 0x0C) {
         return rtcLatched[ramBank - 0x08];
       }
@@ -112,6 +121,16 @@ void Cartridge::write(uint16_t address, uint8_t value) {
       bankingMode = value & 0x01;
       if (bankingMode == 0) {
         ramBank = 0;
+      }
+    }
+  } else if (mbcType == 2) { // MBC2
+    if (address < 0x4000) {
+      if ((address & 0x0100) == 0) {
+        ramEnabled = ((value & 0x0F) == 0x0A);
+      } else {
+        romBank = value & 0x0F;
+        if (romBank == 0)
+          romBank = 1;
       }
     }
   } else if (mbcType == 3) { // MBC3
@@ -257,4 +276,33 @@ void Cartridge::loadRtc() {
         std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
             .count();
   }
+}
+
+void Cartridge::serialize(std::ostream &out) const {
+  out.write(reinterpret_cast<const char *>(ram.data()), ram.size());
+  out.write(reinterpret_cast<const char *>(&romBank), sizeof(romBank));
+  out.write(reinterpret_cast<const char *>(&ramBank), sizeof(ramBank));
+  out.write(reinterpret_cast<const char *>(&ramEnabled), sizeof(ramEnabled));
+  out.write(reinterpret_cast<const char *>(&bankingMode), sizeof(bankingMode));
+  out.write(reinterpret_cast<const char *>(rtcRegisters), 5);
+  out.write(reinterpret_cast<const char *>(rtcLatched), 5);
+  out.write(reinterpret_cast<const char *>(&rtcLastTime), sizeof(rtcLastTime));
+  out.write(reinterpret_cast<const char *>(&rtcMappedBank),
+            sizeof(rtcMappedBank));
+  out.write(reinterpret_cast<const char *>(&rtcLatch), sizeof(rtcLatch));
+  out.write(reinterpret_cast<const char *>(&romBankHigh), sizeof(romBankHigh));
+}
+
+void Cartridge::deserialize(std::istream &in) {
+  in.read(reinterpret_cast<char *>(ram.data()), ram.size());
+  in.read(reinterpret_cast<char *>(&romBank), sizeof(romBank));
+  in.read(reinterpret_cast<char *>(&ramBank), sizeof(ramBank));
+  in.read(reinterpret_cast<char *>(&ramEnabled), sizeof(ramEnabled));
+  in.read(reinterpret_cast<char *>(&bankingMode), sizeof(bankingMode));
+  in.read(reinterpret_cast<char *>(rtcRegisters), 5);
+  in.read(reinterpret_cast<char *>(rtcLatched), 5);
+  in.read(reinterpret_cast<char *>(&rtcLastTime), sizeof(rtcLastTime));
+  in.read(reinterpret_cast<char *>(&rtcMappedBank), sizeof(rtcMappedBank));
+  in.read(reinterpret_cast<char *>(&rtcLatch), sizeof(rtcLatch));
+  in.read(reinterpret_cast<char *>(&romBankHigh), sizeof(romBankHigh));
 }
