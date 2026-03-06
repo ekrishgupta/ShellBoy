@@ -7,21 +7,26 @@
 #include "mmu/Cartridge.h"
 #include <fstream>
 
-Bus::Bus() : cartridge(nullptr), ppu(nullptr), timer(nullptr), joypad(nullptr), bootRomEnabled(false), wramBank(1) { memory.fill(0); wram.fill(0); }
+Bus::Bus()
+    : cartridge(nullptr), ppu(nullptr), timer(nullptr), joypad(nullptr),
+      bootRomEnabled(false), wramBank(1) {
+  memory.fill(0);
+  wram.fill(0);
+}
 
 Bus::~Bus() {}
 
 uint8_t Bus::read(uint16_t address) const {
-  if (oamDmaActive && (address < 0xFF80 || address > 0xFFFE)) {
-    return 0xFF;
-  }
+  // if (oamDmaActive && (address < 0xFF80 || address > 0xFFFE)) {
+  //   return 0xFF;
+  // }
   return readRaw(address);
 }
 
 void Bus::write(uint16_t address, uint8_t value) {
-  if (oamDmaActive && (address < 0xFF80 || address > 0xFFFE)) {
-    return;
-  }
+  // if (oamDmaActive && (address < 0xFF80 || address > 0xFFFE)) {
+  //   return;
+  // }
   writeRaw(address, value);
 }
 
