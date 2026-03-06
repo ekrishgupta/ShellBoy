@@ -1,6 +1,6 @@
 #include "PPU.h"
 
-PPU::PPU(Bus &b) : bus(b) { frameBuffer.fill(0); }
+PPU::PPU(Bus &b) : bus(b) { frameBuffer.fill(0); lcdc = 0x91; }
 
 PPU::~PPU() {}
 
