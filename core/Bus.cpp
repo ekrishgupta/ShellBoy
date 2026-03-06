@@ -7,7 +7,7 @@
 #include "mmu/Cartridge.h"
 #include <fstream>
 
-Bus::Bus() : cartridge(nullptr), ppu(nullptr), timer(nullptr), joypad(nullptr), bootRomEnabled(false), wramBank(1) { memory.fill(0); }
+Bus::Bus() : cartridge(nullptr), ppu(nullptr), timer(nullptr), joypad(nullptr), bootRomEnabled(false), wramBank(1) { memory.fill(0); wram.fill(0); }
 
 Bus::~Bus() {}
 
