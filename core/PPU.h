@@ -10,7 +10,6 @@ class PPU {
 public:
   explicit PPU(Bus &bus);
   ~PPU();
-  void reset();
 
   void tick();
 
@@ -29,7 +28,7 @@ public:
   uint8_t readOAM(uint16_t address, bool internal = false) const;
   void writeOAM(uint16_t address, uint8_t value);
 
-  uint8_t readReg(uint16_t address, bool internal = false) const;
+  uint8_t readReg(uint16_t address) const;
   void writeReg(uint16_t address, uint8_t value);
 
   void serialize(std::ostream &out) const;
@@ -39,6 +38,8 @@ public:
   // 0 = white, 1 = light gray, 2 = dark gray, 3 = black
   std::array<uint8_t, 160 * 144> frameBuffer{};
   bool frameReady = false;
+
+  void reset();
 
 private:
   Bus &bus;
