@@ -1,6 +1,13 @@
 #include "PPU.h"
 
-PPU::PPU(Bus &b) : bus(b) { frameBuffer.fill(0); lcdc = 0x91; stat = 0x85; bgp = 0xFC; obp0 = 0xFF; obp1 = 0xFF; }
+PPU::PPU(Bus &b) : bus(b) {
+  frameBuffer.fill(0);
+  lcdc = 0x91;
+  stat = 0x85;
+  bgp = 0xFC; // Default post-boot palette
+  obp0 = 0xFF;
+  obp1 = 0xFF;
+}
 
 PPU::~PPU() {}
 
@@ -14,7 +21,6 @@ void PPU::reset() {
   scanlineCounter = 456;
   currentScanline = 0;
   vramBank = 0;
-  windowLineCounter = 0;
 }
 
 void PPU::tick() {
@@ -153,9 +159,9 @@ void PPU::renderScanline() {
 
       int16_t tileNum;
       if (unsig) {
-        tileNum = read(tileAddr);
+        tileNum = read(tileAddr, true);
       } else {
-        tileNum = static_cast<int8_t>(read(tileAddr));
+        tileNum = static_cast<int8_t>(read(tileAddr, true));
       }
 
       uint16_t tileLocation = tileData;
@@ -166,8 +172,8 @@ void PPU::renderScanline() {
       }
 
       uint8_t line = yPos % 8;
-      uint8_t data1 = read(tileLocation + (line * 2));
-      uint8_t data2 = read(tileLocation + (line * 2) + 1);
+      uint8_t data1 = read(tileLocation + (line * 2), true);
+      uint8_t data2 = read(tileLocation + (line * 2) + 1, true);
 
       int colorBit = 7 - (xPos % 8);
 
@@ -176,7 +182,7 @@ void PPU::renderScanline() {
 
       uint8_t color = (bgp >> (colorNum * 2)) & 3;
       frameBuffer[currentScanline * 160 + pixel] = color;
-    }
+    } // End of pixel loop
 
     if (windowUsedOnLine) {
       windowLineCounter++;
@@ -252,8 +258,8 @@ void PPU::renderSprites() {
       tileAddr = 0x8000 + (tileIndex * 16) + (line * 2);
     }
 
-    uint8_t data1 = read(tileAddr);
-    uint8_t data2 = read(tileAddr + 1);
+    uint8_t data1 = read(tileAddr, true);
+    uint8_t data2 = read(tileAddr + 1, true);
 
     for (int tilePixel = 0; tilePixel < 8; tilePixel++) {
       int colorBit = 7 - tilePixel;
@@ -283,43 +289,42 @@ void PPU::renderSprites() {
   }
 }
 
-uint8_t PPU::readOAM(uint16_t address) const {
+uint8_t PPU::readOAM(uint16_t address, bool internal) const {
   Mode mode = getMode();
-  if (mode == Mode::OAMSearch || mode == Mode::PixelTransfer) {
-    return 0xFF;
+  if (!internal && (mode == Mode::OAMSearch || mode == Mode::PixelTransfer)) {
+    return 0xFF; // CPU is blocked during drawing
   }
   return oam[address - 0xFE00];
 }
 
 void PPU::writeOAM(uint16_t address, uint8_t value) {
-  Mode mode = getMode();
-  if (mode == Mode::OAMSearch || mode == Mode::PixelTransfer) {
-    return;
-  }
+  // Mode mode = getMode();
+  // if (mode == Mode::OAMSearch || mode == Mode::PixelTransfer) {
+  //   return; // CPU blocked
+  // }
   oam[address - 0xFE00] = value;
 }
 
-uint8_t PPU::read(uint16_t address) const {
-  if (getMode() == Mode::PixelTransfer) {
-    return 0xFF;
+uint8_t PPU::read(uint16_t address, bool internal) const {
+  if (!internal && getMode() == Mode::PixelTransfer) {
+    return 0xFF; // CPU blocked
   }
   return vram[(vramBank * 0x2000) + (address - 0x8000)];
 }
 
 void PPU::write(uint16_t address, uint8_t value) {
-  if (getMode() == Mode::PixelTransfer) {
-    return;
-  }
+  // if (getMode() == Mode::PixelTransfer) {
+  //   return;
+  // }
   vram[(vramBank * 0x2000) + (address - 0x8000)] = value;
 }
 
 uint8_t PPU::readReg(uint16_t address) const {
   switch (address) {
   case 0xFF40:
-    if ((lcdc & 0x80) && !(value & 0x80)) { currentScanline = 0; scanlineCounter = 456; stat = (stat & 0xFC); }
     return lcdc;
   case 0xFF41:
-    return stat | 0x80;
+    return stat | 0x80; // Bit 7 always reads as 1
   case 0xFF42:
     return scy;
   case 0xFF43:
@@ -356,10 +361,16 @@ uint8_t PPU::readReg(uint16_t address) const {
 void PPU::writeReg(uint16_t address, uint8_t value) {
   switch (address) {
   case 0xFF40:
-    if ((lcdc & 0x80) && !(value & 0x80)) { currentScanline = 0; scanlineCounter = 456; stat = (stat & 0xFC); }
+    // When LCD is turned off, reset LY and mode
+    if ((lcdc & 0x80) && !(value & 0x80)) {
+      currentScanline = 0;
+      scanlineCounter = 456;
+      stat = (stat & 0xFC); // Set mode to 0 (HBlank)
+    }
     lcdc = value;
     break;
   case 0xFF41:
+    // Bits 0-2 are read-only (mode and coincidence flag)
     stat = (stat & 0x87) | (value & 0x78);
     break;
   case 0xFF42:
