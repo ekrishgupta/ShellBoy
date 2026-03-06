@@ -15,6 +15,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <thread>
 
 using namespace ftxui;
@@ -61,6 +62,9 @@ int main(int argc, char **argv) {
   Serial serial(&bus);
   APU apu;
 
+  // Ensure everything is set up for no-bootrom environments
+  cpu.reset();
+
   // ── Audio backend ──────────────────────────────────────────────────────────
   AudioBackend audioBackend;
   if (!audioBackend.init()) {
@@ -82,12 +86,27 @@ int main(int argc, char **argv) {
 
   auto renderer_component = Renderer([&] {
     std::string frameText = renderer.render(ppu.frameBuffer);
+    Elements lines;
+    std::string line;
+    std::stringstream ss(frameText);
+    while (std::getline(ss, line)) {
+      lines.push_back(text(line));
+    }
+
+    char registers[256];
+    snprintf(
+        registers, sizeof(registers),
+        "PC:0x%04X SP:0x%04X A:0x%02X F:0x%02X BC:0x%04X DE:0x%04X HL:0x%04X",
+        cpu.PC, cpu.SP, cpu.AF.hi, cpu.AF.lo, cpu.BC.reg16, cpu.DE.reg16,
+        cpu.HL.reg16);
+
     return window(
         text("ShellBoy - DMG-01 Emulator"),
-        vbox({text("Frames: " + std::to_string(frames.load())),
+        vbox({text("Frames: " + std::to_string(frames.load())), text(registers),
               text("Controls: Arrows=D-Pad, Z=A, X=B, Enter=Start, "
                    "Backspace=Select"),
-              text("State: S=Save, L=Load"), separator(), text(frameText)}));
+              text("State: S=Save, L=Load"), separator(),
+              vbox(std::move(lines))}));
   });
 
   renderer_component |= CatchEvent([&](Event event) {
