@@ -37,15 +37,57 @@ void CPU::deserialize(std::istream &in) {
 }
 
 void CPU::reset() {
-  // Standard initialization values for DMG-01
+  // Try to determine if we are starting directly or using a boot ROM.
+  // We can assume if the Bus `bootRomEnabled` is true, a boot ROM was loaded.
+  // The PC will be 0, and the boot ROM handles the rest.
+  // If no boot ROM, we init exactly to the post-boot state.
+
   AF.hi = 0x01;
   AF.lo = 0xB0;
-  BC.reg16 = 0x0013;  BC.reg16 = 0x0013;
-  DE.reg16 = 0x00D8;  DE.reg16 = 0x00D8;
-  HL.reg16 = 0x014D;  HL.reg16 = 0x014D;
-  SP = 0xFFFE;  SP = 0xFFFE;
-  PC = 0x0100;  PC = 0x0100;
+  BC.reg16 = 0x0013;
+  DE.reg16 = 0x00D8;
+  HL.reg16 = 0x014D;
+  SP = 0xFFFE;
+  PC = 0x0100;
   IME = false;
+  IME = false;
+  eiDelay = 0;
+  halted = false;
+  haltBug = false;
+
+  // Initialize PPU/Timer/Audio default values internally
+  bus.write(0xFF40, 0x91); // LCDC
+  bus.write(0xFF41, 0x85); // STAT
+  bus.write(0xFF42, 0x00); // SCY
+  bus.write(0xFF43, 0x00); // SCX
+  bus.write(0xFF45, 0x00); // LYC
+  bus.write(0xFF47, 0xFC); // BGP
+  bus.write(0xFF48, 0xFF); // OBP0
+  bus.write(0xFF49, 0xFF); // OBP1
+  bus.write(0xFF4A, 0x00); // WY
+  bus.write(0xFF4B, 0x00); // WX
+  bus.write(0xFF05, 0x00); // TIMA
+  bus.write(0xFF06, 0x00); // TMA
+  bus.write(0xFF07, 0x00); // TAC
+  bus.write(0xFF10, 0x80); // NR10
+  bus.write(0xFF11, 0xBF); // NR11
+  bus.write(0xFF12, 0xF3); // NR12
+  bus.write(0xFF14, 0xBF); // NR14
+  bus.write(0xFF16, 0x3F); // NR21
+  bus.write(0xFF17, 0x00); // NR22
+  bus.write(0xFF19, 0xBF); // NR24
+  bus.write(0xFF1A, 0x7F); // NR30
+  bus.write(0xFF1B, 0xFF); // NR31
+  bus.write(0xFF1C, 0x9F); // NR32
+  bus.write(0xFF1E, 0xBF); // NR34
+  bus.write(0xFF20, 0xFF); // NR41
+  bus.write(0xFF21, 0x00); // NR42
+  bus.write(0xFF22, 0x00); // NR43
+  bus.write(0xFF23, 0xBF); // NR30
+  bus.write(0xFF24, 0x77); // NR50
+  bus.write(0xFF25, 0xF3); // NR51
+  bus.write(0xFF26,
+            0xF1); // NR52 (0x81 on actual startup often, but F1 enables it)
 }
 
 void CPU::setFlag(uint8_t flag, bool value) {
