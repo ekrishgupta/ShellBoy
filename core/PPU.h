@@ -23,13 +23,13 @@ public:
 
   Mode getMode() const { return static_cast<Mode>(stat & 0x03); }
 
-  uint8_t read(uint16_t address) const;
+  uint8_t read(uint16_t address, bool internal = false) const;
   void write(uint16_t address, uint8_t value);
 
-  uint8_t readOAM(uint16_t address) const;
+  uint8_t readOAM(uint16_t address, bool internal = false) const;
   void writeOAM(uint16_t address, uint8_t value);
 
-  uint8_t readReg(uint16_t address) const;
+  uint8_t readReg(uint16_t address, bool internal = false) const;
   void writeReg(uint16_t address, uint8_t value);
 
   void serialize(std::ostream &out) const;
