@@ -316,6 +316,7 @@ void PPU::write(uint16_t address, uint8_t value) {
 uint8_t PPU::readReg(uint16_t address) const {
   switch (address) {
   case 0xFF40:
+    if ((lcdc & 0x80) && !(value & 0x80)) { currentScanline = 0; scanlineCounter = 456; stat = (stat & 0xFC); }
     return lcdc;
   case 0xFF41:
     return stat | 0x80;
@@ -355,6 +356,7 @@ uint8_t PPU::readReg(uint16_t address) const {
 void PPU::writeReg(uint16_t address, uint8_t value) {
   switch (address) {
   case 0xFF40:
+    if ((lcdc & 0x80) && !(value & 0x80)) { currentScanline = 0; scanlineCounter = 456; stat = (stat & 0xFC); }
     lcdc = value;
     break;
   case 0xFF41:
