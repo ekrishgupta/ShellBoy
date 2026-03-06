@@ -358,7 +358,7 @@ void PPU::writeReg(uint16_t address, uint8_t value) {
     lcdc = value;
     break;
   case 0xFF41:
-    stat = value;
+    stat = (stat & 0x87) | (value & 0x78);
     break;
   case 0xFF42:
     scy = value;
