@@ -40,7 +40,7 @@ void CPU::reset() {
   // Standard initialization values for DMG-01
   AF.hi = 0x01;
   AF.lo = 0xB0;
-  BC.reg16 = 0x0013;
+  BC.reg16 = 0x0013;  BC.reg16 = 0x0013;
   DE.reg16 = 0x00D8;
   HL.reg16 = 0x014D;
   SP = 0xFFFE;
