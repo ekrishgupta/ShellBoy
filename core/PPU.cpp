@@ -4,6 +4,19 @@ PPU::PPU(Bus &b) : bus(b) { frameBuffer.fill(0); lcdc = 0x91; stat = 0x85; bgp =
 
 PPU::~PPU() {}
 
+void PPU::reset() {
+  lcdc = 0x91;
+  stat = 0x85;
+  bgp = 0xFC;
+  obp0 = 0xFF;
+  obp1 = 0xFF;
+  scy = scx = lyc = wy = wx = 0;
+  scanlineCounter = 456;
+  currentScanline = 0;
+  vramBank = 0;
+  windowLineCounter = 0;
+}
+
 void PPU::tick() {
   if (!(lcdc & 0x80)) {
     // LCD disabled: reset variables and stay in Mode 0 (or 2?)
