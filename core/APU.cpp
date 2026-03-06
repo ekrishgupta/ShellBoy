@@ -1,7 +1,6 @@
 #include "APU.h"
 #include "AudioBackend.h"
 
-#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 
@@ -19,9 +18,9 @@ static const bool kDutyTable[4][8] = {
 // APU
 // ---------------------------------------------------------------------------
 APU::APU() {
-  nr50 = 0;
-  nr51 = 0;
-  nr52 = 0x80;
+  nr50 = 0x77;
+  nr51 = 0xF3;
+  nr52 = 0x81;
 }
 
 APU::~APU() {}
@@ -344,9 +343,11 @@ void APU::tick(int tCycles) {
 
   // ── Sample generation ────────────────────────────────────────────────────
   // We accumulate T-cycles; every ~95.1 T-cycles we emit one stereo sample.
-  sampleAccumulator += tCycles;
-  while (sampleAccumulator >= (kCpuHz / kSampleRateHz)) {
-    sampleAccumulator -= (kCpuHz / kSampleRateHz);
+  // Use floating point for precision to avoid frequency drift and crackling.
+  sampleAccumulator += static_cast<double>(tCycles);
+  const double tCyclesPerSample = static_cast<double>(kCpuHz) / kSampleRateHz;
+  while (sampleAccumulator >= tCyclesPerSample) {
+    sampleAccumulator -= tCyclesPerSample;
     emitSample();
   }
 }
@@ -529,10 +530,14 @@ void APU::emitSample() {
 
   constexpr float kMax = 60.0f * 8.0f;
   auto toInt16 = [&](int mix, int vol) -> int16_t {
-    float sample = static_cast<float>(mix * (vol + 1)) / kMax;
-    sample = (sample - 0.5f) * 2.0f;
-    return static_cast<int16_t>(
-        std::clamp(static_cast<int>(sample * 32767.0f), -32767, 32767));
+    if (mix == 0)
+      return 0;
+    // Map mix (0..60) to (-1.0..1.0)
+    // A simple way is to treat 0 as -1 and 60 as 1, centered at 30.
+    // However, Game Boy audio is unipolar. Let's center it.
+    float normalized = (static_cast<float>(mix) / 30.0f) - 1.0f;
+    float volumeScale = static_cast<float>(vol + 1) / 8.0f;
+    return static_cast<int16_t>(normalized * volumeScale * 32767.0f);
   };
 
   audioBackend->pushSample(toInt16(leftMix, leftVol),
