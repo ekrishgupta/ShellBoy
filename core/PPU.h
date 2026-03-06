@@ -10,6 +10,7 @@ class PPU {
 public:
   explicit PPU(Bus &bus);
   ~PPU();
+  void reset();
 
   void tick();
 
