@@ -318,7 +318,7 @@ uint8_t PPU::readReg(uint16_t address) const {
   case 0xFF40:
     return lcdc;
   case 0xFF41:
-    return stat;
+    return stat | 0x80;
   case 0xFF42:
     return scy;
   case 0xFF43:
