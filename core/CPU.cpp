@@ -44,7 +44,7 @@ void CPU::reset() {
   DE.reg16 = 0x00D8;  DE.reg16 = 0x00D8;
   HL.reg16 = 0x014D;  HL.reg16 = 0x014D;
   SP = 0xFFFE;  SP = 0xFFFE;
-  PC = 0x0100;
+  PC = 0x0100;  PC = 0x0100;
   IME = false;
 }
 
